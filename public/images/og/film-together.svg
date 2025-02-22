@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0b0d12"/>
+  <circle cx="940" cy="130" r="330" fill="#fbbf24" opacity=".1"/>
+  <g transform="translate(825 126)"><rect x="0" y="42" width="210" height="330" rx="38" fill="#27272a" transform="rotate(-10 105 207)"/><rect x="108" width="210" height="330" rx="38" fill="#fbbf24" transform="rotate(10 213 165)"/><path d="M164 94c14 42 31 59 73 73-42 14-59 31-73 73-14-42-31-59-73-73 42-14 59-31 73-73Z" fill="#0b0d12"/></g>
+  <text x="92" y="120" fill="#fbbf24" font-family="Arial,sans-serif" font-size="24" font-weight="700" letter-spacing="6">FILM TOGETHER</text>
+  <text x="92" y="255" fill="#fff" font-family="Arial,sans-serif" font-size="72" font-weight="700">Меньше споров.</text>
+  <text x="92" y="342" fill="#fbbf24" font-family="Arial,sans-serif" font-size="72" font-weight="700">Больше кино.</text>
+  <text x="92" y="430" fill="#a1a1aa" font-family="Arial,sans-serif" font-size="28">Выберите фильм вместе — бесплатно и без установки.</text>
+</svg>
