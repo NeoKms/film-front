@@ -1,11 +1,11 @@
 <template>
   <footer class="border-t border-white/10 bg-black/15 px-5 py-8">
     <div
-      class="mx-auto grid max-w-6xl gap-7 text-sm text-zinc-500 lg:grid-cols-[1fr_auto_auto]"
+      class="mx-auto grid max-w-6xl gap-7 text-sm text-zinc-400 lg:grid-cols-[1fr_auto_auto]"
     >
       <p>© {{ new Date().getFullYear() }} Film Together. Все права защищены.</p>
       <nav class="grid gap-3" aria-label="Сценарии выбора фильма">
-        <span class="text-xs uppercase tracking-widest text-zinc-600"
+        <span class="text-xs uppercase tracking-widest text-zinc-400"
           >Сценарии</span
         >
         <NuxtLink to="/for-couples" class="transition hover:text-white"
@@ -19,7 +19,7 @@
         >
       </nav>
       <nav class="grid gap-3" aria-label="Правовая информация">
-        <span class="text-xs uppercase tracking-widest text-zinc-600"
+        <span class="text-xs uppercase tracking-widest text-zinc-400"
           >Документы</span
         >
         <NuxtLink to="/legal/privacy" class="transition hover:text-white"

@@ -22,7 +22,7 @@ export type ProductGoal =
 
 export interface ProductGoalParams {
   page?: 'home' | 'couple' | 'friends' | 'group';
-  source?: 'hero' | 'result' | 'final';
+  source?: 'hero' | 'middle' | 'result' | 'final';
   item?: number;
   depth?: 25 | 50 | 75 | 100;
 }

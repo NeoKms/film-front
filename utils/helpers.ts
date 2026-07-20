@@ -8,6 +8,9 @@ export const sleep = (ms: number): Promise<void> => {
 export const isMissingImageUrl = (src?: string | null): boolean =>
   !src || /no[-_]?poster\.(?:gif|jpe?g|png|webp)(?:\?.*)?$/i.test(src);
 
+export const normalizeRoomCode = (value: string): string =>
+  value.replace(/\D/g, '').slice(0, 6);
+
 export const isRedirectedKinopoiskPlaceholder = (
   image: HTMLImageElement,
 ): boolean =>

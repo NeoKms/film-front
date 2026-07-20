@@ -29,7 +29,7 @@ const faqItems = [
   {
     question: 'Видят ли другие мои ответы?',
     answer:
-      'Нет. Отдельные решения участников не показываются. Все видят только общий match.',
+      'Нет. Отдельные решения участников не показываются. Все видят только общее совпадение.',
   },
   {
     question: 'Можно ли изменить фильтры после старта?',
@@ -39,7 +39,7 @@ const faqItems = [
   {
     question: 'Что происходит после итогового выбора?',
     answer:
-      'Организатор выбирает один из matches, комната завершается, а результатом можно поделиться.',
+      'Организатор выбирает одно из совпадений, комната завершается, а результатом можно поделиться.',
   },
   {
     question: 'Film Together бесплатный?',
@@ -110,7 +110,7 @@ const mechanicSteps = [
     text: 'Каждый видит карточки и голосует в своём темпе.',
   },
   {
-    label: 'Match',
+    label: 'Совпало',
     title: 'Совпадение найдено',
     text: 'Общий положительный выбор сразу получают все.',
   },
@@ -121,11 +121,17 @@ const mechanicSteps = [
   },
 ];
 const activeMechanicStep = ref(0);
+let mechanicTimer: ReturnType<typeof setInterval> | null = null;
+const stopMechanicTimer = () => {
+  if (!mechanicTimer) return;
+  clearInterval(mechanicTimer);
+  mechanicTimer = null;
+};
 const selectMechanicStep = (index: number) => {
+  stopMechanicTimer();
   activeMechanicStep.value = index;
   trackDemo();
 };
-let mechanicTimer: ReturnType<typeof setInterval> | null = null;
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   mechanicTimer = setInterval(() => {
@@ -133,15 +139,13 @@ onMounted(() => {
       (activeMechanicStep.value + 1) % mechanicSteps.length;
   }, 2600);
 });
-onBeforeUnmount(() => {
-  if (mechanicTimer) clearInterval(mechanicTimer);
-});
+onBeforeUnmount(stopMechanicTimer);
 const { data: lastRoom } = await useAsyncData('last-active-room', () =>
   roomStore.openLastRoom(),
 );
 const { track } = useProductAnalytics();
 
-const createRoom = async (source: 'hero' | 'result' | 'final') => {
+const createRoom = async (source: 'hero' | 'middle' | 'result' | 'final') => {
   trackCreate(source);
   loading.value = true;
   try {
@@ -154,8 +158,8 @@ const createRoom = async (source: 'hero' | 'result' | 'final') => {
 
 const joinRoom = async () => {
   track('join_submit');
-  const normalizedCode = code.value.trim().toUpperCase();
-  if (normalizedCode.length !== 6) {
+  const normalizedCode = normalizeRoomCode(code.value);
+  if (!/^\d{6}$/.test(normalizedCode)) {
     notificationStore.addNotification('Введите шестизначный код', 'warning');
     return;
   }
@@ -169,6 +173,13 @@ const joinRoom = async () => {
   }
 };
 
+const normalizedRoomCode = computed({
+  get: () => code.value,
+  set: (value: string) => {
+    code.value = normalizeRoomCode(value);
+  },
+});
+
 const onFaqToggle = (event: Event, index: number) => {
   if ((event.currentTarget as HTMLDetailsElement).open) trackFaq(index);
 };
@@ -177,38 +188,47 @@ const onFaqToggle = (event: Event, index: number) => {
 <template>
   <div>
     <section
-      class="relative isolate flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden px-5 py-12"
+      class="relative isolate flex min-h-[calc(100dvh-4rem)] items-center overflow-hidden px-5 py-6 sm:py-12"
     >
       <div class="pointer-events-none absolute inset-0 cinematic-grid" />
       <div
-        class="relative mx-auto grid min-w-0 w-full max-w-6xl gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center"
+        class="relative mx-auto grid min-w-0 w-full max-w-6xl gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-12"
       >
         <div class="min-w-0 max-w-2xl">
           <p
-            class="mb-5 text-xs font-semibold uppercase tracking-[0.28em] text-amber-300"
+            class="mb-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300 sm:mb-5 sm:text-xs sm:tracking-[0.28em]"
           >
             Один вечер · один общий выбор
           </p>
           <h1
-            class="text-balance text-5xl font-semibold leading-[0.95] tracking-tight text-white sm:text-7xl"
+            class="text-balance text-[2.5rem] font-semibold leading-[0.95] tracking-tight text-white min-[375px]:text-5xl sm:text-7xl"
           >
             Выберите фильм вместе <br /><span class="text-amber-300"
               >без споров.</span
             >
           </h1>
-          <p class="mt-7 max-w-xl text-lg leading-8 text-zinc-300">
-            Выберите фильм на вечер вдвоём или с друзьями. Создайте комнату,
-            настройте каталог и голосуйте независимо — общий выбор увидят все.
+          <p
+            class="mt-4 max-w-xl text-base leading-6 text-zinc-300 sm:mt-7 sm:text-lg sm:leading-8"
+          >
+            Создайте комнату и выбирайте фильмы независимо. Film Together
+            покажет только общие совпадения.
           </p>
-          <p class="mt-3 text-sm text-zinc-500">Меньше споров. Больше кино.</p>
+          <button
+            class="mt-5 min-h-12 w-full rounded-2xl bg-amber-300 px-5 font-semibold text-zinc-950 transition hover:bg-amber-200 disabled:opacity-50 lg:hidden"
+            :disabled="loading"
+            @click="createRoom('hero')"
+          >
+            Создать комнату
+          </button>
+          <p class="mt-3 text-sm text-zinc-400">Меньше споров. Больше кино.</p>
           <div
-            class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-zinc-400"
+            class="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-zinc-400 sm:mt-8 sm:gap-x-6 sm:gap-y-3 sm:text-sm"
           >
             <span>Бесплатно</span><span>Без установки</span
             ><span>Без обязательной регистрации</span>
           </div>
           <button
-            class="mt-7 text-sm font-medium text-amber-300 underline decoration-amber-300/30 underline-offset-4"
+            class="mt-5 text-sm font-medium text-amber-300 underline decoration-amber-300/30 underline-offset-4 sm:mt-7"
             @click="showHowItWorks = true"
           >
             Как это работает
@@ -219,12 +239,15 @@ const onFaqToggle = (event: Event, index: number) => {
           id="start"
           class="min-w-0 rounded-[2rem] border border-white/10 bg-zinc-950/75 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8"
         >
-          <h2 class="text-2xl font-medium text-white">Начать выбор</h2>
+          <h2 class="text-2xl font-medium text-white">
+            <span class="lg:hidden">Войти в комнату</span>
+            <span class="hidden lg:inline">Начать выбор</span>
+          </h2>
           <p class="mt-2 text-sm text-zinc-400">
-            Гостевой профиль создаётся автоматически.
+            Без регистрации — достаточно имени.
           </p>
           <button
-            class="mt-8 w-full rounded-2xl bg-amber-300 px-5 py-4 font-semibold text-zinc-950 transition hover:bg-amber-200 disabled:opacity-50"
+            class="mt-8 hidden w-full rounded-2xl bg-amber-300 px-5 py-4 font-semibold text-zinc-950 transition hover:bg-amber-200 disabled:opacity-50 lg:block"
             :disabled="loading"
             @click="createRoom('hero')"
           >
@@ -237,11 +260,11 @@ const onFaqToggle = (event: Event, index: number) => {
           >
             <span
               ><b class="block text-white">Вернуться в комнату</b
-              ><span class="text-zinc-500">Код {{ lastRoom.code }}</span></span
+              ><span class="text-zinc-400">Код {{ lastRoom.code }}</span></span
             ><span aria-hidden="true">→</span>
           </NuxtLink>
           <div
-            class="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-zinc-600"
+            class="my-6 flex items-center gap-3 text-xs uppercase tracking-widest text-zinc-400"
           >
             <span class="h-px flex-1 bg-white/10" />или войти по коду<span
               class="h-px flex-1 bg-white/10"
@@ -249,16 +272,19 @@ const onFaqToggle = (event: Event, index: number) => {
           </div>
           <form
             class="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+            novalidate
             @submit.prevent="joinRoom"
           >
             <input
-              v-model="code"
+              v-model="normalizedRoomCode"
               maxlength="6"
               autocomplete="off"
-              autocapitalize="characters"
+              inputmode="numeric"
+              pattern="[0-9]{6}"
+              enterkeyhint="go"
               aria-label="Код комнаты"
-              class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center font-mono text-lg uppercase tracking-[0.3em] text-white outline-none transition focus:border-amber-300"
-              placeholder="ABC123"
+              class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center font-mono text-lg tracking-[0.3em] text-white outline-none transition focus:border-amber-300"
+              placeholder="123456"
             />
             <button
               class="min-h-12 rounded-2xl border border-white/15 px-5 text-white transition hover:bg-white/10 disabled:opacity-50"
@@ -271,7 +297,7 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="px-5 pb-20">
+    <section class="px-5 pb-14 sm:pb-20">
       <div
         class="mechanic-shell mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-white/10 bg-[#11141a] p-5 sm:p-8"
       >
@@ -283,7 +309,7 @@ const onFaqToggle = (event: Event, index: number) => {
               Живая механика
             </p>
             <h2 class="mt-3 text-3xl font-medium text-white sm:text-4xl">
-              Комната → свайп → match → итог
+              Комната → свайп → совпадение → итог
             </h2>
             <p class="mt-4 max-w-md text-sm leading-6 text-zinc-400">
               Небольшая репетиция настоящего интерфейса: весь путь продолжается
@@ -291,20 +317,19 @@ const onFaqToggle = (event: Event, index: number) => {
             </p>
             <div
               class="mt-6 grid grid-cols-4 gap-2"
-              role="tablist"
+              role="group"
               aria-label="Этапы выбора фильма"
             >
               <button
                 v-for="(step, index) in mechanicSteps"
                 :key="step.label"
                 type="button"
-                role="tab"
-                :aria-selected="activeMechanicStep === index"
+                :aria-pressed="activeMechanicStep === index"
                 class="mechanic-tab min-h-10 rounded-xl border px-2 text-[11px] transition"
                 :class="
                   activeMechanicStep === index
                     ? 'is-active border-amber-300/50 bg-amber-300/10 text-amber-200'
-                    : 'border-white/10 text-zinc-500 hover:text-white'
+                    : 'border-white/10 text-zinc-400 hover:text-white'
                 "
                 @click="selectMechanicStep(index)"
               >
@@ -321,7 +346,7 @@ const onFaqToggle = (event: Event, index: number) => {
             >
               <div>
                 <span class="font-mono text-xs text-amber-300"
-                  >ROOM A7K2QF</span
+                  >ROOM 482731</span
                 >
                 <p class="mt-1 text-[10px] text-zinc-600">
                   Film Together · live
@@ -395,7 +420,7 @@ const onFaqToggle = (event: Event, index: number) => {
                   <p
                     class="mt-3 text-xs uppercase tracking-[0.22em] text-amber-300"
                   >
-                    Это match
+                    Есть совпадение
                   </p>
                   <p class="mt-2 text-xl font-medium text-white">
                     Выбрали все трое
@@ -417,7 +442,7 @@ const onFaqToggle = (event: Event, index: number) => {
                     <p class="mt-2 text-lg font-medium text-white">
                       Фильм выбран
                     </p>
-                    <p class="mt-1 text-xs text-zinc-500">
+                    <p class="mt-1 text-xs text-zinc-400">
                       Можно делиться результатом
                     </p>
                   </div>
@@ -428,7 +453,7 @@ const onFaqToggle = (event: Event, index: number) => {
                   <p class="text-sm font-medium text-white">
                     {{ mechanicSteps[activeMechanicStep]?.title }}
                   </p>
-                  <p class="mt-1 text-[11px] text-zinc-500">
+                  <p class="mt-1 text-[11px] text-zinc-400">
                     {{ mechanicSteps[activeMechanicStep]?.text }}
                   </p>
                 </div>
@@ -439,7 +464,9 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="border-y border-white/5 bg-white/[0.02] px-5 py-20">
+    <section
+      class="border-y border-white/5 bg-white/[0.02] px-5 py-14 sm:py-20"
+    >
       <div class="mx-auto max-w-5xl">
         <p
           class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"
@@ -455,19 +482,27 @@ const onFaqToggle = (event: Event, index: number) => {
               ['Ссылки и скриншоты в чате', 'Одна общая комната'],
               ['Мнение первого влияет на остальных', 'Независимые решения'],
               ['Бесконечный каталог', 'Подборка и фильтры до старта'],
-              ['После списка снова спор', 'Общий match и итоговый фильм'],
+              ['После списка снова спор', 'Общее совпадение и итоговый фильм'],
             ]"
             :key="row[0]"
             class="grid gap-2 border-b border-white/10 p-4 last:border-0 sm:grid-cols-2 sm:p-5"
           >
-            <span class="text-zinc-500">{{ row[0] }}</span
+            <span class="text-zinc-400">{{ row[0] }}</span
             ><strong class="text-white">{{ row[1] }}</strong>
           </div>
         </div>
+        <button
+          type="button"
+          class="mt-8 min-h-12 rounded-2xl bg-amber-300 px-6 font-semibold text-zinc-950 transition hover:bg-amber-200 disabled:opacity-50"
+          :disabled="loading"
+          @click="createRoom('middle')"
+        >
+          Попробовать бесплатно
+        </button>
       </div>
     </section>
 
-    <section class="px-5 py-20">
+    <section class="px-5 py-14 sm:py-20">
       <div class="mx-auto max-w-6xl">
         <p
           class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"
@@ -508,7 +543,7 @@ const onFaqToggle = (event: Event, index: number) => {
             class="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
           >
             <h3 class="text-sm font-medium text-white">{{ item.title }}</h3>
-            <p class="mt-2 text-xs leading-5 text-zinc-500">{{ item.text }}</p>
+            <p class="mt-2 text-xs leading-5 text-zinc-400">{{ item.text }}</p>
           </div>
         </div>
         <div
@@ -529,7 +564,7 @@ const onFaqToggle = (event: Event, index: number) => {
           <div class="mt-5 grid gap-3 sm:grid-cols-3">
             <div
               v-for="item in [
-                'Одна или несколько',
+                'Готовые подборки',
                 'Без ручной настройки',
                 'Общая очередь для всех',
               ]"
@@ -543,46 +578,7 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="border-y border-white/5 bg-white/[0.02] px-5 py-20">
-      <div class="mx-auto max-w-6xl">
-        <p
-          class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"
-        >
-          Как это работает
-        </p>
-        <h2 class="mt-3 max-w-2xl text-3xl font-medium text-white sm:text-5xl">
-          Каждый выбирает сам.<br />Совпадение видят все.
-        </h2>
-        <div class="mt-10 grid gap-4 md:grid-cols-3">
-          <article
-            v-for="(item, index) in [
-              {
-                title: 'Создайте комнату',
-                text: 'Без регистрации. Настройте жанры, годы и рейтинги.',
-              },
-              {
-                title: 'Пригласите компанию',
-                text: 'Ссылка, QR или короткий код работают в любом браузере.',
-              },
-              {
-                title: 'Свайпайте фильмы',
-                text: 'Влево — мимо, вправо — берём. Match появится автоматически.',
-              },
-            ]"
-            :key="item.title"
-            class="rounded-3xl border border-white/10 bg-[#11141a] p-6"
-          >
-            <span class="font-mono text-sm text-zinc-600"
-              >0{{ index + 1 }}</span
-            >
-            <h3 class="mt-8 text-xl text-white">{{ item.title }}</h3>
-            <p class="mt-3 text-sm leading-6 text-zinc-400">{{ item.text }}</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="px-5 py-20">
+    <section class="border-t border-white/5 px-5 py-14 sm:py-20">
       <div class="mx-auto grid max-w-6xl gap-10 lg:grid-cols-2 lg:items-center">
         <div>
           <p
@@ -594,8 +590,8 @@ const onFaqToggle = (event: Event, index: number) => {
             Не надо листать каталог в одном телефоне
           </h2>
           <p class="mt-5 max-w-xl text-base leading-7 text-zinc-400">
-            У каждого свой набор карточек и свой темп. Настройки комнаты
-            фиксируют выборку, а realtime сообщает о совпадении сразу всем.
+            У всех одна очередь фильмов, но каждый выбирает в своём темпе. О
+            совпадении сервис сообщает сразу всей комнате.
           </p>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -610,7 +606,9 @@ const onFaqToggle = (event: Event, index: number) => {
           <div
             class="col-span-2 rounded-3xl border border-white/10 bg-white/[0.04] p-5"
           >
-            <b class="text-xl text-white">Touch · Mouse · Keyboard</b>
+            <b class="text-xl text-white"
+              >Сенсорный экран · Мышь · Клавиатура</b
+            >
             <p class="mt-3 text-sm text-zinc-400">
               Свайпы на телефоне, перетаскивание мышью и стрелки на клавиатуре.
             </p>
@@ -619,7 +617,9 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="border-y border-white/5 bg-white/[0.02] px-5 py-20">
+    <section
+      class="border-y border-white/5 bg-white/[0.02] px-5 py-14 sm:py-20"
+    >
       <div class="mx-auto grid max-w-6xl gap-6 md:grid-cols-2">
         <article
           class="rounded-3xl border border-white/10 bg-[#11141a] p-6 sm:p-8"
@@ -633,9 +633,10 @@ const onFaqToggle = (event: Event, index: number) => {
             Ваши свайпы — только ваши
           </h2>
           <p class="mt-4 text-sm leading-7 text-zinc-400">
-            Участники голосуют в своём темпе и не видят чужие yes/no. Match
-            появляется только при общем выборе. Публичная карточка результата не
-            содержит имён, кода комнаты или истории голосов.
+            Участники голосуют в своём темпе и не видят чужие ответы «да» и
+            «нет». Совпадение появляется только при общем выборе. Публичная
+            карточка результата не содержит имён, кода комнаты или истории
+            голосов.
           </p>
         </article>
         <article
@@ -650,7 +651,7 @@ const onFaqToggle = (event: Event, index: number) => {
             Выберите один фильм
           </h2>
           <p class="mt-4 text-sm leading-7 text-zinc-400">
-            Организатор назначает итог среди matches, делится фильмом в
+            Организатор назначает итог среди совпадений, делится фильмом в
             мессенджере или повторяет комнату с теми же фильтрами.
           </p>
           <button
@@ -665,7 +666,7 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="px-5 py-16">
+    <section class="px-5 py-12 sm:py-16">
       <div
         class="mx-auto max-w-6xl rounded-3xl border border-white/10 p-6 sm:flex sm:items-center sm:justify-between sm:gap-8 sm:p-8"
       >
@@ -673,12 +674,12 @@ const onFaqToggle = (event: Event, index: number) => {
           <p
             class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300"
           >
-            Открытая beta
+            Открытая бета
           </p>
           <h2 class="mt-2 text-2xl font-medium text-white">
             Продукт развивается вместе с первыми компаниями
           </h2>
-          <p class="mt-2 text-sm text-zinc-500">
+          <p class="mt-2 text-sm text-zinc-400">
             Без выдуманных отзывов и маркетинговых цифр — только работающий
             совместный выбор.
           </p>
@@ -692,7 +693,9 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="border-y border-white/5 bg-white/[0.02] px-5 py-20">
+    <section
+      class="border-y border-white/5 bg-white/[0.02] px-5 py-14 sm:py-20"
+    >
       <div class="mx-auto max-w-6xl">
         <p
           class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"
@@ -722,7 +725,7 @@ const onFaqToggle = (event: Event, index: number) => {
               {
                 to: '/for-groups',
                 title: 'Фильм для компании',
-                text: 'Единые фильтры и match с учётом каждого из 3–12 участников.',
+                text: 'Единые фильтры и совпадение с учётом каждого из 3–12 участников.',
               },
             ]"
             :key="item.to"
@@ -730,14 +733,14 @@ const onFaqToggle = (event: Event, index: number) => {
             class="rounded-3xl border border-white/10 bg-[#11141a] p-6 transition hover:border-amber-300/30 hover:bg-amber-300/[0.04]"
           >
             <h3 class="text-xl text-white">{{ item.title }}</h3>
-            <p class="mt-3 text-sm leading-6 text-zinc-500">{{ item.text }}</p>
+            <p class="mt-3 text-sm leading-6 text-zinc-400">{{ item.text }}</p>
             <span class="mt-6 block text-sm text-amber-300">Подробнее →</span>
           </NuxtLink>
         </div>
       </div>
     </section>
 
-    <section class="border-t border-white/5 px-5 py-20">
+    <section class="border-t border-white/5 px-5 py-14 sm:py-20">
       <div class="mx-auto max-w-3xl">
         <p
           class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"
@@ -756,7 +759,7 @@ const onFaqToggle = (event: Event, index: number) => {
               class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg text-white"
             >
               <span>{{ item.question }}</span
-              ><span class="text-zinc-600 transition group-open:rotate-45"
+              ><span class="text-zinc-400 transition group-open:rotate-45"
                 >+</span
               >
             </summary>
@@ -768,7 +771,7 @@ const onFaqToggle = (event: Event, index: number) => {
       </div>
     </section>
 
-    <section class="px-5 pb-20">
+    <section class="px-5 pb-14 sm:pb-20">
       <div
         class="mx-auto max-w-6xl rounded-[2rem] bg-amber-300 p-7 text-zinc-950 sm:p-12"
       >
@@ -782,7 +785,7 @@ const onFaqToggle = (event: Event, index: number) => {
               Готовы выбрать?
             </p>
             <h2 class="mt-2 text-3xl font-semibold sm:text-5xl">
-              Начните с комнаты.
+              Выберите фильм, а не спор.
             </h2>
             <p class="mt-3 max-w-xl text-sm opacity-70">
               Бесплатно, без установки и обязательной регистрации.
@@ -829,7 +832,8 @@ const onFaqToggle = (event: Event, index: number) => {
         <li class="rounded-2xl bg-white/5 p-4">
           <b class="text-amber-300">3. Свайпайте</b>
           <p class="mt-1 text-sm text-zinc-400">
-            Влево — пропустить, вправо — выбрать. Общий выбор станет match.
+            Влево — пропустить, вправо — выбрать. Общий выбор станет
+            совпадением.
           </p>
         </li>
       </ol>

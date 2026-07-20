@@ -1,7 +1,7 @@
 import type { SeoIntentAnalyticsSource } from '~/types';
 
 type LandingAnalyticsSource = 'home' | SeoIntentAnalyticsSource;
-type LandingCtaSource = 'hero' | 'result' | 'final';
+type LandingCtaSource = 'hero' | 'middle' | 'result' | 'final';
 
 const SCROLL_DEPTHS = [25, 50, 75, 100] as const;
 

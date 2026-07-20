@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import {
   isMissingImageUrl,
   mapSettingsToFilmFilter,
+  normalizeRoomCode,
   toQueryParams,
 } from '../../utils/helpers';
 import type { ISettingFilmFilters } from '../../stores/room';
@@ -40,6 +41,18 @@ describe('isMissingImageUrl', () => {
     expect(isMissingImageUrl('https://example.test/posters/film.jpg')).toBe(
       false,
     );
+  });
+});
+
+describe('normalizeRoomCode', () => {
+  test.each([
+    ['123456', '123456'],
+    ['12A-34 56', '123456'],
+    [' 123 456 ', '123456'],
+    ['123456789', '123456'],
+    ['', ''],
+  ])('normalizes %j to %j', (value, expected) => {
+    expect(normalizeRoomCode(value)).toBe(expected);
   });
 });
 

@@ -33,6 +33,12 @@ button:disabled {
   cursor: not-allowed;
 }
 
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid rgb(252 211 77);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px #0b0d12;
+}
+
 .cinematic-grid {
   background:
     radial-gradient(

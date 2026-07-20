@@ -43,7 +43,7 @@ const userStore = useUserStore();
         >
         <button
           v-if="userStore.profile?.token_id"
-          class="min-h-10 px-1 text-zinc-500 hover:text-white"
+          class="min-h-10 px-1 text-zinc-400 hover:text-white"
           aria-label="Выйти"
           @click="authStore.logout"
         >
