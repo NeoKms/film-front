@@ -13,6 +13,9 @@ const escapeXml = (value: string) =>
 
 export default defineEventHandler((event) => {
   const config = useRuntimeConfig(event);
+  if (config.public.deploymentEnvironment !== 'production') {
+    throw createError({ statusCode: 404, statusMessage: 'Not Found' });
+  }
   const siteUrl = config.public.siteUrl.replace(/\/$/, '');
   const routes = ['/', '/legal/privacy', '/legal/cookies', '/legal/terms'];
   setHeader(event, 'content-type', 'application/xml; charset=utf-8');

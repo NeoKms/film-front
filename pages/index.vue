@@ -1,9 +1,9 @@
 <script setup lang="ts">
 const config = useRuntimeConfig();
 const publicOrigin = computed(() =>
-  config.public.deploymentEnvironment === 'beta'
-    ? 'https://film-together.com'
-    : config.public.siteUrl,
+  config.public.deploymentEnvironment === 'production'
+    ? config.public.siteUrl
+    : 'https://film-together.com',
 );
 const canonicalUrl = computed(
   () => `${String(publicOrigin.value).replace(/\/$/, '')}/`,
@@ -59,9 +59,9 @@ useSeoMeta({
     'Комната по ссылке, точные фильтры и независимый выбор фильмов. Без установки и обязательной регистрации.',
   ogUrl: canonicalUrl,
   robots: computed(() =>
-    config.public.deploymentEnvironment === 'beta'
-      ? 'noindex, nofollow'
-      : 'index, follow',
+    config.public.deploymentEnvironment === 'production'
+      ? 'index, follow'
+      : 'noindex, nofollow, noarchive',
   ),
 });
 useHead({
@@ -132,21 +132,6 @@ const { data: lastRoom } = await useAsyncData('last-active-room', () =>
   roomStore.openLastRoom(),
 );
 const { track } = useProductAnalytics();
-const wrappedFetch = useWrappedFetch();
-const { data: collections } = await useAsyncData(
-  'landing-collections',
-  async () => {
-    try {
-      return (
-        await wrappedFetch<{ items: Array<{ _id: string; name: string }> }>(
-          '/film-groups',
-        )
-      ).items;
-    } catch {
-      return [];
-    }
-  },
-);
 
 const createRoom = async () => {
   track('landing_create_click');
@@ -170,18 +155,6 @@ const joinRoom = async () => {
   try {
     const room = await roomStore.joinByCode(normalizedCode);
     track('join_success');
-    await navigateTo(`/room/${room._id}`);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const createFromCollection = async (groupId: string) => {
-  loading.value = true;
-  try {
-    const room = await roomStore.createRoom();
-    await roomStore.updateFilters(room._id, { groups: [groupId] });
-    track('collection_selected');
     await navigateTo(`/room/${room._id}`);
   } finally {
     loading.value = false;
@@ -526,28 +499,33 @@ const createFromCollection = async (groupId: string) => {
           </div>
         </div>
         <div
-          v-if="collections?.length"
           class="mt-10 rounded-3xl border border-amber-300/20 bg-amber-300/[0.05] p-5 sm:p-7"
         >
           <p class="text-xs uppercase tracking-[0.2em] text-amber-300">
-            Быстрый старт с подборки
+            Готовые подборки
           </p>
-          <div class="mt-4 flex flex-wrap gap-3">
-            <button
-              v-for="collection in collections.slice(0, 6)"
-              :key="collection._id"
-              type="button"
-              class="min-h-11 rounded-full border border-white/15 bg-white/5 px-4 text-sm text-white transition hover:border-amber-300/50"
-              :disabled="loading"
-              @click="createFromCollection(collection._id)"
+          <h3 class="mt-3 text-2xl font-medium text-white">
+            Не обязательно настраивать всё вручную
+          </h3>
+          <p class="mt-3 max-w-3xl text-sm leading-6 text-zinc-400">
+            В комнате можно выбрать одну или несколько готовых подборок вместо
+            ручной настройки жанров, стран, участников фильма, годов и
+            рейтингов. Фильмы из выбранных подборок объединяются в одну общую
+            очередь для всех.
+          </p>
+          <div class="mt-5 grid gap-3 sm:grid-cols-3">
+            <div
+              v-for="item in [
+                'Одна или несколько',
+                'Без ручной настройки',
+                'Общая очередь для всех',
+              ]"
+              :key="item"
+              class="rounded-2xl border border-white/10 bg-black/10 px-4 py-3 text-sm text-zinc-200"
             >
-              {{ collection.name }}
-            </button>
+              {{ item }}
+            </div>
           </div>
-          <p class="mt-4 text-xs leading-5 text-zinc-500">
-            Подборка — самостоятельный готовый фильтр. В комнате можно выбрать
-            одну или несколько подборок либо настроить каталог вручную.
-          </p>
         </div>
       </div>
     </section>

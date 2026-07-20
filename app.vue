@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const config = useRuntimeConfig();
+
 useHead({
   meta: [
     { charset: 'utf-8' },
@@ -38,6 +40,11 @@ useHead({
     title ? `${title} · Film Together` : 'Film Together',
 });
 useSeoMeta({
+  robots: computed(() =>
+    config.public.deploymentEnvironment === 'production'
+      ? undefined
+      : 'noindex, nofollow, noarchive',
+  ),
   ogSiteName: 'Film Together',
   ogType: 'website',
   ogLocale: 'ru_RU',

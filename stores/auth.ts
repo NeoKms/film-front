@@ -34,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref<Nullable<string>>(null);
   const guestId = ref<Nullable<string>>(null);
   let refreshPromise: Promise<IAuthResponse> | null = null;
+  let guestProfilePromise: Promise<void> | null = null;
 
   function applyDeleteCookie(
     name: 'accessToken' | 'refreshToken' | 'guest',
@@ -65,6 +66,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function signUpByLogin(data: ISignUpByLogin): Promise<void> {
     const response = await wrappedFetch<IAuthResponse>('/auth/sign-up', {
       method: 'POST',
+      skipGuestBootstrap: true,
       body: {
         ...data,
         provider: EAuthProvider.local,
@@ -86,6 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function signInByLogin(data: IAuthByLogin): Promise<void> {
     const response = await wrappedFetch<IAuthResponse>('/auth/sign-in', {
       method: 'POST',
+      skipGuestBootstrap: true,
       body: {
         ...data,
         provider: EAuthProvider.local,
@@ -168,6 +171,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function signInByGoogle(code: string): Promise<boolean> {
     return await wrappedFetch<IAuthResponse>('/auth/sign-up', {
       method: 'POST',
+      skipGuestBootstrap: true,
       body: { google_code: code, provider: EAuthProvider.google },
     })
       .then((data) => setTokens(data))
@@ -190,9 +194,9 @@ export const useAuthStore = defineStore('auth', () => {
             await refreshSession();
           } catch {
             clearTokens();
-            await guestProfile();
           }
-        } else if (!cookies.accessToken) {
+        }
+        if (!accessToken.value && guestId.value) {
           await guestProfile();
         }
       } catch (err) {
@@ -205,6 +209,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await wrappedFetch<IGuestResponse>(`/auth/guest`, {
         method: 'POST',
+        skipGuestBootstrap: true,
       });
       if (response._id) {
         guestId.value = response._id;
@@ -216,6 +221,17 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
       await multiNavigate('/error/500', event);
     }
+  }
+
+  async function ensureGuestProfile(): Promise<void> {
+    if (accessToken.value || (guestId.value && userStore.profile)) return;
+    if (!guestProfilePromise) {
+      guestProfilePromise = guestProfile().finally(() => {
+        guestProfilePromise = null;
+      });
+    }
+    await guestProfilePromise;
+    if (!guestId.value) throw new Error('Guest profile is unavailable');
   }
 
   return {
@@ -233,5 +249,6 @@ export const useAuthStore = defineStore('auth', () => {
     setTokens,
     refreshSession,
     guestProfile,
+    ensureGuestProfile,
   };
 });

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
     guestId: 'guest-id' as string | null,
     refreshSession: vi.fn(),
     clearTokens: vi.fn(),
+    ensureGuestProfile: vi.fn(),
   },
 }));
 
@@ -34,6 +35,7 @@ beforeEach(() => {
   mocks.authStore.guestId = 'guest-id';
   mocks.authStore.refreshSession.mockReset();
   mocks.authStore.clearTokens.mockReset();
+  mocks.authStore.ensureGuestProfile.mockReset();
 });
 
 afterEach(() => {
@@ -42,6 +44,38 @@ afterEach(() => {
 });
 
 describe('useWrappedFetch', () => {
+  test('bootstraps a guest only for an unauthenticated client request', async () => {
+    const { bootstrapClientGuest } =
+      await import('../../composables/wrappedFetch');
+    mocks.authStore.accessToken = null;
+    mocks.authStore.guestId = null;
+    mocks.authStore.ensureGuestProfile.mockResolvedValue(undefined);
+
+    await bootstrapClientGuest(mocks.authStore, false, true);
+
+    expect(mocks.authStore.ensureGuestProfile).toHaveBeenCalledOnce();
+  });
+
+  test('does not bootstrap a guest for SSR, auth bootstrap or an existing identity', async () => {
+    const { bootstrapClientGuest } =
+      await import('../../composables/wrappedFetch');
+    mocks.authStore.ensureGuestProfile.mockResolvedValue(undefined);
+    mocks.authStore.accessToken = null;
+    mocks.authStore.guestId = null;
+
+    await bootstrapClientGuest(mocks.authStore, false, false);
+    await bootstrapClientGuest(mocks.authStore, true, true);
+
+    mocks.authStore.accessToken = 'access-token';
+    await bootstrapClientGuest(mocks.authStore, false, true);
+
+    mocks.authStore.accessToken = null;
+    mocks.authStore.guestId = 'guest-id';
+    await bootstrapClientGuest(mocks.authStore, false, true);
+
+    expect(mocks.authStore.ensureGuestProfile).not.toHaveBeenCalled();
+  });
+
   test('adds credentials and default timeout to API request', async () => {
     const { wrappedFetch, fetchMock } = await setupWrappedFetch();
     fetchMock.mockResolvedValue({ ok: true });
@@ -87,6 +121,25 @@ describe('useWrappedFetch', () => {
     ).rejects.toBe(unauthorized);
     expect(mocks.authStore.refreshSession).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not forward guest bootstrap option to $fetch', async () => {
+    const { wrappedFetch, fetchMock } = await setupWrappedFetch();
+    fetchMock.mockResolvedValue({ ok: true });
+
+    await wrappedFetch('/auth/sign-in', {
+      method: 'POST',
+      skipGuestBootstrap: true,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith('http://api.test/auth/sign-in', {
+      method: 'POST',
+      timeout: 12_000,
+      headers: {
+        Authorization: 'Bearer access-token',
+        'X-GUEST-ID': 'guest-id',
+      },
+    });
   });
 
   test('clears tokens when refresh fails', async () => {

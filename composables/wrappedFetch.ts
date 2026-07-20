@@ -1,6 +1,27 @@
 import { useAuthStore } from '~/stores/auth';
 import type { NitroFetchOptions, NitroFetchRequest } from 'nitropack';
 
+interface GuestBootstrapStore {
+  accessToken: string | null;
+  guestId: string | null;
+  ensureGuestProfile: () => Promise<void>;
+}
+
+export const bootstrapClientGuest = async (
+  authStore: GuestBootstrapStore,
+  skipGuestBootstrap: boolean,
+  isClient = import.meta.client,
+): Promise<void> => {
+  if (
+    isClient &&
+    !skipGuestBootstrap &&
+    !authStore.accessToken &&
+    !authStore.guestId
+  ) {
+    await authStore.ensureGuestProfile();
+  }
+};
+
 export const useWrappedFetch = () => {
   const authStore = useAuthStore();
   const notificationStore = useNotificationStore();
@@ -11,10 +32,15 @@ export const useWrappedFetch = () => {
     options: Omit<NitroFetchOptions<NitroFetchRequest>, 'headers'> & {
       headers?: Record<string, string>;
       skipAuthRefresh?: boolean;
+      skipGuestBootstrap?: boolean;
     } = {},
   ): Promise<DefaultT> {
     const url = runtimeConfig.public.API_URL + path;
-    const { skipAuthRefresh = false, ...fetchOptions } = options;
+    const {
+      skipAuthRefresh = false,
+      skipGuestBootstrap = false,
+      ...fetchOptions
+    } = options;
     fetchOptions.timeout ??= 12_000;
 
     if (runtimeConfig.public.debug) {
@@ -22,6 +48,7 @@ export const useWrappedFetch = () => {
     }
     try {
       const authStore = useAuthStore();
+      await bootstrapClientGuest(authStore, skipGuestBootstrap);
       if (!fetchOptions?.headers?.['Authorization'] && authStore.accessToken) {
         fetchOptions.headers = {
           ...fetchOptions.headers,

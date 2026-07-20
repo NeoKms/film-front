@@ -35,6 +35,12 @@ Define these variables separately in `dev` and `production`:
 - `LEGAL_EMAIL`
 - `YANDEX_METRIKA_ID`
 
+The workflow supplies `NUXT_PUBLIC_DEPLOYMENT_ENVIRONMENT` automatically:
+`dev` for the pre-production deployment and `production` for a release. Search
+indexing is enabled only for the exact `production` value. Every other value
+returns a global `X-Robots-Tag`, blocks all crawling in `robots.txt`, and does
+not publish a sitemap.
+
 The host must have Docker installed, and the SSH user must be allowed to run Docker commands. TLS and routing to `APP_PORT` remain the responsibility of the host reverse proxy. [`nginx.example.conf`](../nginx.example.conf) contains a ready-to-adapt Nginx server block; its upstream port must match `APP_PORT`.
 
 A manual production run requires `environment=production` and an existing `release_tag`. It rebuilds and deploys that tag; normal production deployments should be started by publishing a GitHub Release.

@@ -5,7 +5,6 @@ export type ProductGoal =
   | 'join_success'
   | 'filters_open'
   | 'filters_saved'
-  | 'collection_selected'
   | 'room_started'
   | 'first_decision'
   | 'match_received'

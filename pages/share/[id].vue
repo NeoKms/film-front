@@ -14,9 +14,9 @@ if (!film.value)
 
 const pageOrigin = String(config.public.siteUrl).replace(/\/$/, '');
 const canonicalOrigin = String(
-  config.public.deploymentEnvironment === 'beta'
-    ? 'https://film-together.com'
-    : config.public.siteUrl,
+  config.public.deploymentEnvironment === 'production'
+    ? config.public.siteUrl
+    : 'https://film-together.com',
 ).replace(/\/$/, '');
 const shareUrl = `${pageOrigin}/share/${film.value._id}`;
 const canonicalUrl = `${canonicalOrigin}/share/${film.value._id}`;
