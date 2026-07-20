@@ -41,7 +41,7 @@ const filterSummary = computed(() => {
     result.push(
       `${value.year_from ?? 1960}–${value.year_to ?? new Date().getFullYear()}`,
     );
-  if (value.rating_kp_from) result.push(`КП от ${value.rating_kp_from}`);
+  if (value.rating_from) result.push(`Рейтинг от ${value.rating_from}`);
   return result.length ? result : ['Без ограничений'];
 });
 

@@ -142,13 +142,9 @@ useSeoMeta({ robots: 'noindex, nofollow' });
           <div class="self-end">
             <div class="flex flex-wrap gap-2 text-xs">
               <span
-                v-if="film.rating_kp"
+                v-if="film.rating"
                 class="rounded-full bg-amber-300 px-3 py-1 font-bold text-zinc-950"
-                >КП {{ film.rating_kp.toFixed(1) }}</span
-              ><span
-                v-if="film.rating_imdb"
-                class="rounded-full bg-white/15 px-3 py-1 text-white"
-                >IMDb {{ film.rating_imdb.toFixed(1) }}</span
+                >Рейтинг {{ film.rating.toFixed(1) }}</span
               ><span
                 v-if="film.rating_age !== null"
                 class="rounded-full bg-white/15 px-3 py-1 text-white"

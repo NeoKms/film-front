@@ -80,12 +80,8 @@ export const mapSettingsToFilmFilter = (
       filter.countries.length && filter.countriesMode === 'exclude'
         ? filter.countries.map((el) => el.value.toString())
         : undefined,
-    rating_kp_from: filter.ratingKp[0] === 1 ? undefined : +filter.ratingKp[0],
-    rating_kp_to: filter.ratingKp[1] === 10 ? undefined : +filter.ratingKp[1],
-    rating_imdb_from:
-      filter.ratingImdb[0] === 1 ? undefined : +filter.ratingImdb[0],
-    rating_imdb_to:
-      filter.ratingImdb[1] === 10 ? undefined : +filter.ratingImdb[1],
+    rating_from: filter.rating[0] === 1 ? undefined : +filter.rating[0],
+    rating_to: filter.rating[1] === 10 ? undefined : +filter.rating[1],
     year_from: filter.year[0] === 1960 ? undefined : +filter.year[0],
     year_to: filter.year[1] === nowYear ? undefined : +filter.year[1],
     age_ratings: filter.ageRatings.length

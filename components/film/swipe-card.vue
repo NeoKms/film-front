@@ -167,14 +167,9 @@ defineExpose({ swipe: commit });
     <div class="absolute inset-x-0 bottom-0 p-5 sm:p-7">
       <div class="pointer-events-none mb-3 flex flex-wrap gap-2 text-xs">
         <span
-          v-if="film.rating_kp"
+          v-if="film.rating"
           class="rounded-full bg-amber-300 px-2.5 py-1 font-bold text-zinc-950"
-          >КП {{ film.rating_kp.toFixed(1) }}</span
-        >
-        <span
-          v-if="film.rating_imdb"
-          class="rounded-full bg-white/15 px-2.5 py-1 text-white backdrop-blur"
-          >IMDb {{ film.rating_imdb.toFixed(1) }}</span
+          >Рейтинг {{ film.rating.toFixed(1) }}</span
         >
       </div>
       <h1

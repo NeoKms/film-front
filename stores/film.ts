@@ -9,10 +9,8 @@ export interface IFilmFilter {
   exclude_actors?: string[];
   exclude_tags?: string[];
   exclude_countries?: string[];
-  rating_kp_from?: number;
-  rating_kp_to?: number;
-  rating_imdb_from?: number;
-  rating_imdb_to?: number;
+  rating_from?: number;
+  rating_to?: number;
   year_from?: number;
   year_to?: number;
   age_ratings?: number[];
@@ -37,8 +35,7 @@ export interface IFilmItem {
   _id: string;
   name: string;
   description: string | null;
-  rating_kp: number;
-  rating_imdb: number;
+  rating: number;
   duration: number;
   rating_age: number | null;
   rating_mpaa: EMPAARating | null;

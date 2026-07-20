@@ -16,8 +16,7 @@ const createSettings = (
   countriesMode: 'include',
   actors: [],
   actorsMode: 'include',
-  ratingKp: [1, 10],
-  ratingImdb: [1, 10],
+  rating: [1, 10],
   year: [1960, new Date().getFullYear()],
   ageRatings: [],
   mpaaRatings: [],
@@ -104,18 +103,15 @@ describe('mapSettingsToFilmFilter', () => {
     expect(
       mapSettingsToFilmFilter(
         createSettings({
-          ratingKp: [5, 9],
-          ratingImdb: [1, 8],
+          rating: [5, 9],
           year: [1980, 2026],
           ageRatings: [12, 16],
           mpaaRatings: ['PG', 'R'],
         }),
       ),
     ).toMatchObject({
-      rating_kp_from: 5,
-      rating_kp_to: 9,
-      rating_imdb_from: undefined,
-      rating_imdb_to: 8,
+      rating_from: 5,
+      rating_to: 9,
       year_from: 1980,
       year_to: undefined,
       age_ratings: [12, 16],

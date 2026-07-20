@@ -19,8 +19,7 @@ export interface ISettingFilmFilters {
   countriesMode: 'include' | 'exclude';
   actors: SelectOption[];
   actorsMode: 'include' | 'exclude';
-  ratingKp: [number, number];
-  ratingImdb: [number, number];
+  rating: [number, number];
   year: [number, number];
   ageRatings: number[];
   mpaaRatings: string[];

@@ -18,8 +18,7 @@ type AdminFilm = {
   verified: boolean;
   deleted: boolean;
   description?: string | null;
-  rating_kp?: number | null;
-  rating_imdb?: number | null;
+  rating?: number | null;
   rating_age?: number | null;
   rating_mpaa?: string | null;
   description_en?: string | null;
@@ -88,8 +87,7 @@ const filmEditableKeys = [
   'name_en',
   'description',
   'description_en',
-  'rating_kp',
-  'rating_imdb',
+  'rating',
   'duration',
   'rating_age',
   'rating_mpaa',
@@ -529,22 +527,10 @@ onMounted(refresh);
                   </dd>
                 </div>
                 <div>
-                  <dt>КП</dt>
+                  <dt>Рейтинг</dt>
                   <dd>
                     {{
-                      filmDetails.rating_kp
-                        ? filmDetails.rating_kp.toFixed(1)
-                        : '—'
-                    }}
-                  </dd>
-                </div>
-                <div>
-                  <dt>IMDb</dt>
-                  <dd>
-                    {{
-                      filmDetails.rating_imdb
-                        ? filmDetails.rating_imdb.toFixed(1)
-                        : '—'
+                      filmDetails.rating ? filmDetails.rating.toFixed(1) : '—'
                     }}
                   </dd>
                 </div>
@@ -674,18 +660,10 @@ onMounted(refresh);
                   </select></label
                 >
               </div>
-              <div class="grid gap-4 sm:grid-cols-2">
+              <div>
                 <label class="block text-sm text-zinc-300"
-                  >Рейтинг КП<input
-                    v-model.number="selected.rating_kp"
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    class="admin-input" /></label
-                ><label class="block text-sm text-zinc-300"
-                  >Рейтинг IMDb<input
-                    v-model.number="selected.rating_imdb"
+                  >Рейтинг<input
+                    v-model.number="selected.rating"
                     type="number"
                     min="0"
                     max="10"

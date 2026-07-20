@@ -20,14 +20,7 @@ const localFilters = reactive<ISettingFilmFilters>({
     : 'include',
   actors: [],
   actorsMode: props.filters.exclude_actors?.length ? 'exclude' : 'include',
-  ratingKp: [
-    props.filters.rating_kp_from ?? 1,
-    props.filters.rating_kp_to ?? 10,
-  ],
-  ratingImdb: [
-    props.filters.rating_imdb_from ?? 1,
-    props.filters.rating_imdb_to ?? 10,
-  ],
+  rating: [props.filters.rating_from ?? 1, props.filters.rating_to ?? 10],
   year: [props.filters.year_from ?? 1960, props.filters.year_to ?? nowYear],
   ageRatings: props.filters.age_ratings ?? [],
   mpaaRatings: props.filters.mpaa_ratings ?? [],
@@ -294,8 +287,7 @@ const resetFilters = () => {
   localFilters.tags = [];
   localFilters.countries = [];
   localFilters.actors = [];
-  localFilters.ratingKp = [1, 10];
-  localFilters.ratingImdb = [1, 10];
+  localFilters.rating = [1, 10];
   localFilters.year = [1960, nowYear];
   localFilters.ageRatings = [];
   localFilters.mpaaRatings = [];
@@ -472,31 +464,17 @@ const resetFilters = () => {
         </div>
         <div>
           <label class="mb-4 block text-sm font-medium text-zinc-200"
-            >Рейтинг Кинопоиска</label
+            >Рейтинг</label
           >
           <div class="relative w-full pb-4">
             <design-system-multi-range
-              v-model="localFilters.ratingKp"
+              v-model="localFilters.rating"
               :max="10"
               :min="1"
               :step="0.1"
             />
           </div>
         </div>
-        <div>
-          <label class="mb-4 block text-sm font-medium text-zinc-200"
-            >Рейтинг IMDb</label
-          >
-          <div class="relative w-full pb-4">
-            <design-system-multi-range
-              v-model="localFilters.ratingImdb"
-              :max="10"
-              :min="1"
-              :step="0.1"
-            />
-          </div>
-        </div>
-
         <fieldset>
           <legend class="mb-2 text-sm font-medium text-zinc-200">
             Возрастной рейтинг
