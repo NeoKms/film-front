@@ -31,52 +31,15 @@ const positionLabels: Record<EPersonPosition, string> = {
   [EPersonPosition.Composers]: 'Композиторы',
 };
 const positionOrder = Object.values(EPersonPosition);
-const unavailablePhotos = ref(new Set<string>());
 const peopleScroller = ref<HTMLElement | null>(null);
-const personKey = (person: IFilmItem['person_items'][number]) =>
-  `${person.position}:${person.name}:${person.photo_url ?? ''}`;
-const setPhotoAvailability = (
-  person: IFilmItem['person_items'][number],
-  available: boolean,
-) => {
-  const next = new Set(unavailablePhotos.value);
-  const key = personKey(person);
-  const wasUnavailable = next.has(key);
-  if (wasUnavailable === !available) return;
-  if (available) next.delete(key);
-  else next.add(key);
-  unavailablePhotos.value = next;
-  void nextTick(() => {
-    if (peopleScroller.value) peopleScroller.value.scrollLeft = 0;
-  });
-};
-const isPersonPhotoUnavailable = (
-  person: IFilmItem['person_items'][number],
-) =>
-  isMissingImageUrl(person.photo_url) ||
-  unavailablePhotos.value.has(personKey(person));
 const peopleGroups = computed(() => {
-  const grouped = new Map<string, IFilmItem['person_items']>();
-  for (const person of film.value?.person_items ?? []) {
-    const people = grouped.get(person.position) ?? [];
-    people.push(person);
-    grouped.set(person.position, people);
-  }
-  return [...grouped]
-    .sort(
-      ([left], [right]) =>
-        positionOrder.indexOf(left as EPersonPosition) -
-        positionOrder.indexOf(right as EPersonPosition),
-    )
-    .map(([position, people]) => ({
+  return groupFilmPeople(film.value?.person_items ?? [], positionOrder).map(
+    ({ position, people }) => ({
       key: position,
       label: positionLabels[position as EPersonPosition] ?? position,
-      people: [...people].sort(
-        (left, right) =>
-          Number(isPersonPhotoUnavailable(left)) -
-          Number(isPersonPhotoUnavailable(right)),
-      ),
-    }));
+      people,
+    }),
+  );
 });
 const activeTeamKey = ref('');
 const teamExpanded = ref(false);
@@ -305,7 +268,6 @@ useSeoMeta({ robots: 'noindex, nofollow' });
               :alt="person.name"
               variant="person"
               class="aspect-square rounded-2xl"
-              @availability="setPhotoAvailability(person, $event)"
             />
             <p
               class="mt-2 line-clamp-2 text-xs font-medium leading-4 text-white"

@@ -32,6 +32,7 @@ export interface FilmItemPerson {
   name: string;
   position: EPersonPosition;
   photo_url: string | null;
+  billing_order: number;
 }
 
 export interface IFilmItem {
