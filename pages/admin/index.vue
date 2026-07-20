@@ -12,6 +12,11 @@ import {
   getNextFilmStatus,
   matchesAdminFilmStatus,
 } from '~/utils/admin-film-moderation';
+import {
+  loadAllAdminReferences,
+  resolveAdminReferenceNames,
+  type AdminReferenceOption,
+} from '~/utils/admin-references';
 
 definePageMeta({ middleware: 'admin' });
 
@@ -45,7 +50,7 @@ type AdminFilm = {
   groups?: string[];
   created_at?: string;
 };
-type AdminReference = { _id: string; name: string; verified: boolean };
+type AdminReference = AdminReferenceOption;
 type AdminDashboard = {
   totals: Record<
     | 'films'
@@ -163,20 +168,23 @@ const sections: Section[] = [
 ];
 
 const loadFilmOptions = async () => {
-  if (
-    groupOptions.value.length &&
-    tagOptions.value.length &&
-    countryOptions.value.length
-  )
-    return;
+  const loadReferences = (resource: 'groups' | 'tags' | 'countries') =>
+    loadAllAdminReferences<AdminReference>(async ({ limit, offset }) =>
+      wrappedFetch(
+        `/admin/${resource}?${new URLSearchParams({
+          limit: String(limit),
+          offset: String(offset),
+        })}`,
+      ),
+    );
   const [groups, tags, countries] = await Promise.all([
-    wrappedFetch<{ items: AdminReference[] }>('/admin/groups?limit=100'),
-    wrappedFetch<{ items: AdminReference[] }>('/admin/tags?limit=100'),
-    wrappedFetch<{ items: AdminReference[] }>('/admin/countries?limit=100'),
+    loadReferences('groups'),
+    loadReferences('tags'),
+    loadReferences('countries'),
   ]);
-  groupOptions.value = groups.items;
-  tagOptions.value = tags.items;
-  countryOptions.value = countries.items;
+  groupOptions.value = groups;
+  tagOptions.value = tags;
+  countryOptions.value = countries;
 };
 
 const maxDaily = computed(() =>
@@ -214,14 +222,18 @@ const swipeRemaining = computed(
 const canUndoSwipe = computed(() => {
   return Boolean(swipeActions.value.length);
 });
-const referenceNames = (ids: string[] | undefined, options: AdminReference[]) =>
-  (ids ?? []).map(
-    (id) => options.find((option) => option._id === id)?.name ?? id,
-  );
 const swipeFilm = (film: AdminFilm) => ({
   ...film,
-  countryNames: referenceNames(film.countries, countryOptions.value),
-  tagNames: referenceNames(film.tags, tagOptions.value),
+  countryNames: resolveAdminReferenceNames(
+    film.countries,
+    countryOptions.value,
+    'Неизвестная страна',
+  ),
+  tagNames: resolveAdminReferenceNames(
+    film.tags,
+    tagOptions.value,
+    'Неизвестный жанр',
+  ),
 });
 
 const exitModerationFullscreen = () => {
@@ -291,6 +303,7 @@ async function loadFilms(reset = false) {
   isLoading.value = true;
   error.value = '';
   try {
+    if (reset) await loadFilmOptions();
     const params = new URLSearchParams({
       limit: String(filmLimit),
       offset: String(serverOffset.value),
@@ -328,7 +341,6 @@ async function refresh() {
       return;
     }
     if (section.value === 'films') {
-      await loadFilmOptions();
       await loadFilms(true);
       return;
     }
