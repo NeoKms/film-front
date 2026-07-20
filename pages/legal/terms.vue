@@ -4,9 +4,13 @@ const legalEmail = computed(
   () => config.public.legalEmail || 'upachko@gmail.com',
 );
 
-useSeoMeta({
+usePublicSeo({
+  path: '/legal/terms',
   title: 'Пользовательское соглашение',
   description: 'Условия использования сервиса Film Together.',
+  ogTitle: 'Пользовательское соглашение — Film Together',
+  ogDescription:
+    'Правила гостевого и зарегистрированного использования Film Together.',
 });
 </script>
 

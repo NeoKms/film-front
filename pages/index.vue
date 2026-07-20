@@ -1,96 +1,100 @@
 <script setup lang="ts">
 const config = useRuntimeConfig();
-const publicOrigin = computed(() =>
-  config.public.deploymentEnvironment === 'production'
-    ? config.public.siteUrl
-    : 'https://film-together.com',
-);
-const canonicalUrl = computed(
-  () => `${String(publicOrigin.value).replace(/\/$/, '')}/`,
-);
 const faqItems = [
   {
-    q: 'Как выбрать фильм вместе онлайн?',
-    a: 'Создайте комнату, пригласите участников по ссылке, QR-коду или шестизначному коду. Каждый оценивает фильмы независимо, а сервис показывает общие совпадения.',
+    question: 'Как выбрать фильм вместе онлайн?',
+    answer:
+      'Создайте комнату, пригласите участников по ссылке, QR-коду или шестизначному коду. Каждый оценивает фильмы независимо, а сервис показывает общие совпадения.',
   },
   {
-    q: 'Нужно устанавливать приложение?',
-    a: 'Нет. Film Together работает прямо в браузере на телефоне и компьютере.',
+    question: 'Нужно устанавливать приложение?',
+    answer:
+      'Нет. Film Together работает прямо в браузере на телефоне и компьютере.',
   },
   {
-    q: 'Нужна регистрация?',
-    a: 'Нет. Для комнаты достаточно гостевого имени. Аккаунт нужен для личной истории и будущих списков предпочтений.',
+    question: 'Нужна регистрация?',
+    answer:
+      'Нет. Для комнаты достаточно гостевого имени. Аккаунт нужен для личной истории и будущих списков предпочтений.',
   },
   {
-    q: 'Что считается совпадением?',
-    a: 'Фильм становится совпадением, когда его положительно выбрали все текущие участники комнаты.',
+    question: 'Что считается совпадением?',
+    answer:
+      'Фильм становится совпадением, когда его положительно выбрали все текущие участники комнаты.',
   },
   {
-    q: 'Сколько человек может участвовать?',
-    a: 'До 12 участников в одной комнате: подходит паре, друзьям и небольшой компании.',
+    question: 'Сколько человек может участвовать?',
+    answer:
+      'До 12 участников в одной комнате: подходит паре, друзьям и небольшой компании.',
   },
   {
-    q: 'Видят ли другие мои ответы?',
-    a: 'Нет. Отдельные решения участников не показываются. Все видят только общий match.',
+    question: 'Видят ли другие мои ответы?',
+    answer:
+      'Нет. Отдельные решения участников не показываются. Все видят только общий match.',
   },
   {
-    q: 'Можно ли изменить фильтры после старта?',
-    a: 'Фильтры фиксируются при старте, чтобы очередь была одинаковой для всех. Их можно изменить до начала или повторить завершённую комнату.',
+    question: 'Можно ли изменить фильтры после старта?',
+    answer:
+      'Фильтры фиксируются при старте, чтобы очередь была одинаковой для всех. Их можно изменить до начала или повторить завершённую комнату.',
   },
   {
-    q: 'Что происходит после итогового выбора?',
-    a: 'Организатор выбирает один из matches, комната завершается, а результатом можно поделиться.',
+    question: 'Что происходит после итогового выбора?',
+    answer:
+      'Организатор выбирает один из matches, комната завершается, а результатом можно поделиться.',
   },
   {
-    q: 'Film Together бесплатный?',
-    a: 'Да, beta-версия бесплатна и работает без обязательной регистрации.',
+    question: 'Film Together бесплатный?',
+    answer:
+      'Да, beta-версия бесплатна и работает без обязательной регистрации.',
   },
   {
-    q: 'Здесь есть сериалы?',
-    a: 'Нет. Film Together сейчас помогает выбирать полнометражные фильмы.',
+    question: 'Здесь есть сериалы?',
+    answer:
+      'Нет. Film Together сейчас помогает выбирать полнометражные фильмы.',
   },
 ];
-useSeoMeta({
+usePublicSeo({
+  path: '/',
   title: 'Выбрать фильм вместе онлайн',
   description:
     'Бесплатно выберите фильм на вечер вдвоём или с друзьями: создайте комнату, настройте фильтры и свайпайте независимо до общего совпадения.',
   ogTitle: 'Film Together — выберите фильм вместе без споров',
   ogDescription:
     'Комната по ссылке, точные фильтры и независимый выбор фильмов. Без установки и обязательной регистрации.',
-  ogUrl: canonicalUrl,
-  robots: computed(() =>
-    config.public.deploymentEnvironment === 'production'
-      ? 'index, follow'
-      : 'noindex, nofollow, noarchive',
-  ),
-});
-useHead({
-  link: [{ rel: 'canonical', href: canonicalUrl }],
-  script: [
-    {
-      type: 'application/ld+json',
-      innerHTML: JSON.stringify({
-        '@context': 'https://schema.org',
+  structuredData: ({ canonicalUrl, imageUrl }) => ({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'WebSite',
+        '@id': `${canonicalUrl}#website`,
+        name: 'Film Together',
+        url: canonicalUrl,
+        inLanguage: 'ru-RU',
+      },
+      {
         '@type': 'WebApplication',
+        '@id': `${canonicalUrl}#application`,
         name: 'Film Together',
         applicationCategory: 'EntertainmentApplication',
         operatingSystem: 'Любая система с современным браузером',
         offers: { '@type': 'Offer', price: '0', priceCurrency: 'RUB' },
         description:
           'Сервис для совместного выбора фильма вдвоём или с друзьями.',
-        url: canonicalUrl.value,
-        mainEntity: faqItems.map((item) => ({
-          '@type': 'Question',
-          name: item.q,
-          acceptedAnswer: { '@type': 'Answer', text: item.a },
-        })),
-      }),
-    },
-  ],
+        url: canonicalUrl,
+        image: imageUrl,
+        inLanguage: 'ru-RU',
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `${canonicalUrl}#faq`,
+        mainEntity: buildFaqEntities(faqItems),
+      },
+    ],
+  }),
 });
 
 const roomStore = useRoomStore();
 const notificationStore = useNotificationStore();
+const { trackCreate, trackDemo, trackFaq } = useLandingAnalytics('home');
 const code = ref('');
 const loading = ref(false);
 const showHowItWorks = ref(false);
@@ -117,6 +121,10 @@ const mechanicSteps = [
   },
 ];
 const activeMechanicStep = ref(0);
+const selectMechanicStep = (index: number) => {
+  activeMechanicStep.value = index;
+  trackDemo();
+};
 let mechanicTimer: ReturnType<typeof setInterval> | null = null;
 onMounted(() => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -133,8 +141,8 @@ const { data: lastRoom } = await useAsyncData('last-active-room', () =>
 );
 const { track } = useProductAnalytics();
 
-const createRoom = async () => {
-  track('landing_create_click');
+const createRoom = async (source: 'hero' | 'result' | 'final') => {
+  trackCreate(source);
   loading.value = true;
   try {
     const room = await roomStore.createRoom();
@@ -159,6 +167,10 @@ const joinRoom = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const onFaqToggle = (event: Event, index: number) => {
+  if ((event.currentTarget as HTMLDetailsElement).open) trackFaq(index);
 };
 </script>
 
@@ -204,6 +216,7 @@ const joinRoom = async () => {
         </div>
 
         <div
+          id="start"
           class="min-w-0 rounded-[2rem] border border-white/10 bg-zinc-950/75 p-6 shadow-2xl shadow-black/40 backdrop-blur-xl sm:p-8"
         >
           <h2 class="text-2xl font-medium text-white">Начать выбор</h2>
@@ -213,7 +226,7 @@ const joinRoom = async () => {
           <button
             class="mt-8 w-full rounded-2xl bg-amber-300 px-5 py-4 font-semibold text-zinc-950 transition hover:bg-amber-200 disabled:opacity-50"
             :disabled="loading"
-            @click="createRoom"
+            @click="createRoom('hero')"
           >
             Создать комнату
           </button>
@@ -293,7 +306,7 @@ const joinRoom = async () => {
                     ? 'is-active border-amber-300/50 bg-amber-300/10 text-amber-200'
                     : 'border-white/10 text-zinc-500 hover:text-white'
                 "
-                @click="activeMechanicStep = index"
+                @click="selectMechanicStep(index)"
               >
                 {{ step.label }}
               </button>
@@ -644,7 +657,7 @@ const joinRoom = async () => {
             type="button"
             class="mt-6 min-h-12 rounded-2xl bg-amber-300 px-5 font-semibold text-zinc-950"
             :disabled="loading"
-            @click="createRoom"
+            @click="createRoom('result')"
           >
             Попробовать бесплатно
           </button>
@@ -679,6 +692,51 @@ const joinRoom = async () => {
       </div>
     </section>
 
+    <section class="border-y border-white/5 bg-white/[0.02] px-5 py-20">
+      <div class="mx-auto max-w-6xl">
+        <p
+          class="text-xs font-semibold uppercase tracking-[0.24em] text-amber-300"
+        >
+          Выберите свой сценарий
+        </p>
+        <h2 class="mt-3 max-w-3xl text-3xl font-medium text-white sm:text-5xl">
+          Один механизм для разных компаний
+        </h2>
+        <p class="mt-4 max-w-2xl text-sm leading-7 text-zinc-400">
+          Узнайте, как организовать выбор для пары, друзей или компании до 12
+          человек — с подходящими фильтрами и без открытого давления на ответы.
+        </p>
+        <div class="mt-9 grid gap-4 md:grid-cols-3">
+          <NuxtLink
+            v-for="item in [
+              {
+                to: '/for-couples',
+                title: 'Что посмотреть вдвоём',
+                text: 'Приватные решения двух участников и только общие совпадения.',
+              },
+              {
+                to: '/for-friends',
+                title: 'Что посмотреть с друзьями',
+                text: 'Приглашение ссылкой и независимый выбор на каждом устройстве.',
+              },
+              {
+                to: '/for-groups',
+                title: 'Фильм для компании',
+                text: 'Единые фильтры и match с учётом каждого из 3–12 участников.',
+              },
+            ]"
+            :key="item.to"
+            :to="item.to"
+            class="rounded-3xl border border-white/10 bg-[#11141a] p-6 transition hover:border-amber-300/30 hover:bg-amber-300/[0.04]"
+          >
+            <h3 class="text-xl text-white">{{ item.title }}</h3>
+            <p class="mt-3 text-sm leading-6 text-zinc-500">{{ item.text }}</p>
+            <span class="mt-6 block text-sm text-amber-300">Подробнее →</span>
+          </NuxtLink>
+        </div>
+      </div>
+    </section>
+
     <section class="border-t border-white/5 px-5 py-20">
       <div class="mx-auto max-w-3xl">
         <p
@@ -688,17 +746,22 @@ const joinRoom = async () => {
         </p>
         <h2 class="mt-3 text-3xl font-medium text-white">Частые вопросы</h2>
         <div class="mt-8 divide-y divide-white/10">
-          <details v-for="item in faqItems" :key="item.q" class="group py-5">
+          <details
+            v-for="(item, index) in faqItems"
+            :key="item.question"
+            class="group py-5"
+            @toggle="onFaqToggle($event, index)"
+          >
             <summary
               class="flex cursor-pointer list-none items-center justify-between gap-4 text-lg text-white"
             >
-              <span>{{ item.q }}</span
+              <span>{{ item.question }}</span
               ><span class="text-zinc-600 transition group-open:rotate-45"
                 >+</span
               >
             </summary>
             <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-              {{ item.a }}
+              {{ item.answer }}
             </p>
           </details>
         </div>
@@ -728,7 +791,7 @@ const joinRoom = async () => {
           <button
             class="min-h-14 rounded-2xl bg-zinc-950 px-7 font-semibold text-white"
             :disabled="loading"
-            @click="createRoom"
+            @click="createRoom('final')"
           >
             Создать бесплатно
           </button>

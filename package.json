@@ -18,6 +18,7 @@
     "lint:check": "eslint . --max-warnings=0",
     "test": "npm run test:contract && npm run test:unit",
     "test:contract": "node scripts/check-contract.mjs",
+    "test:seo": "node scripts/check-seo.mjs",
     "test:unit": "vitest run"
   },
   "dependencies": {

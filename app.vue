@@ -1,5 +1,13 @@
 <script setup lang="ts">
+import { buildAbsoluteUrl, DEFAULT_OG_IMAGE_PATH } from '~/utils/seo';
+
 const config = useRuntimeConfig();
+const defaultOgImage = computed(() =>
+  buildAbsoluteUrl(
+    String(config.public.siteUrl || 'http://localhost:3000'),
+    DEFAULT_OG_IMAGE_PATH,
+  ),
+);
 
 useHead({
   meta: [
@@ -48,10 +56,13 @@ useSeoMeta({
   ogSiteName: 'Film Together',
   ogType: 'website',
   ogLocale: 'ru_RU',
-  ogImage: '/images/og/film-together.png',
+  ogImage: defaultOgImage,
+  ogImageAlt: 'Film Together — совместный выбор фильма',
   ogImageWidth: 1200,
   ogImageHeight: 630,
   twitterCard: 'summary_large_image',
+  twitterImage: defaultOgImage,
+  twitterImageAlt: 'Film Together — совместный выбор фильма',
 });
 </script>
 <template>

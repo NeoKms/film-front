@@ -3,9 +3,13 @@ const config = useRuntimeConfig();
 const legalEmail = computed(
   () => config.public.legalEmail || 'upachko@gmail.com',
 );
-useSeoMeta({
+usePublicSeo({
+  path: '/legal/privacy',
   title: 'Политика в отношении обработки персональных данных',
   description: 'Политика обработки персональных данных сервиса Film Together.',
+  ogTitle: 'Обработка персональных данных — Film Together',
+  ogDescription:
+    'Какие данные обрабатывает Film Together, для каких целей и как реализовать права субъекта персональных данных.',
 });
 </script>
 

@@ -38,9 +38,13 @@ const saveChoice = async (allowAnalytics: boolean) => {
   }
 };
 
-useSeoMeta({
+usePublicSeo({
+  path: '/legal/cookies',
   title: 'Политика использования cookie',
   description: 'Какие cookie использует сервис Film Together.',
+  ogTitle: 'Cookie и аналитика — Film Together',
+  ogDescription:
+    'Необходимые cookie сервиса, consent-gated Яндекс Метрика и управление выбором аналитики.',
 });
 </script>
 

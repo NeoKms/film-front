@@ -24,3 +24,34 @@ export interface Pagination {
   limit: number;
   offset: number;
 }
+
+export interface SeoFaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface SeoIntentSection {
+  eyebrow: string;
+  title: string;
+  paragraphs: string[];
+  bullets?: string[];
+}
+
+export type SeoIntentAnalyticsSource = 'couple' | 'friends' | 'group';
+
+export interface SeoIntentPage {
+  slug: string;
+  title: string;
+  description: string;
+  ogTitle: string;
+  ogDescription: string;
+  eyebrow: string;
+  h1: string;
+  lead: string;
+  benefits: Array<{ title: string; text: string }>;
+  sections: SeoIntentSection[];
+  faq: SeoFaqItem[];
+  ctaTitle: string;
+  ctaText: string;
+  analyticsSource: SeoIntentAnalyticsSource;
+}

@@ -113,6 +113,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Check production SEO responses
+        run: npm run test:seo
+
   build-and-push:
     name: Build & Push Docker image
     runs-on: ubuntu-latest

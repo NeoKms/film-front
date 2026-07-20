@@ -43,4 +43,9 @@ not publish a sitemap.
 
 The host must have Docker installed, and the SSH user must be allowed to run Docker commands. TLS and routing to `APP_PORT` remain the responsibility of the host reverse proxy. [`nginx.example.conf`](../nginx.example.conf) contains a ready-to-adapt Nginx server block; its upstream port must match `APP_PORT`.
 
+The frontend quality job runs the SSR SEO check after the production build. It
+verifies the public route allowlist, canonical and OpenGraph URLs, JSON-LD,
+private-route `X-Robots-Tag`, `robots.txt`, and both production and dev sitemap
+behavior.
+
 A manual production run requires `environment=production` and an existing `release_tag`. It rebuilds and deploys that tag; normal production deployments should be started by publishing a GitHub Release.

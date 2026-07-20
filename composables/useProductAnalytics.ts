@@ -15,7 +15,17 @@ export type ProductGoal =
   | 'share_page_create_click'
   | 'room_repeated'
   | 'signup_started'
-  | 'signup_completed';
+  | 'signup_completed'
+  | 'landing_demo_interaction'
+  | 'landing_faq_open'
+  | 'landing_scroll_depth';
+
+export interface ProductGoalParams {
+  page?: 'home' | 'couple' | 'friends' | 'group';
+  source?: 'hero' | 'result' | 'final';
+  item?: number;
+  depth?: 25 | 50 | 75 | 100;
+}
 
 declare global {
   interface Window {
@@ -105,11 +115,12 @@ export const useProductAnalytics = () => {
     sendPageView(url, referer);
   };
 
-  const track = (goal: ProductGoal) => {
+  const track = (goal: ProductGoal, params: ProductGoalParams = {}) => {
     if (!import.meta.client || !enabled.value || !consent.value) return;
     load();
     window.ym?.(counterId, 'reachGoal', goal, {
       environment: String(config.public.analyticsEnvironment || 'unknown'),
+      ...params,
     });
   };
 

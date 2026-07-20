@@ -8,14 +8,6 @@ export default defineEventHandler((event) => {
   return [
     'User-agent: *',
     'Allow: /',
-    'Disallow: /room/',
-    'Disallow: /film/',
-    'Disallow: /share/',
-    'Disallow: /profile',
-    'Disallow: /admin',
-    'Disallow: /sign-in',
-    'Disallow: /signup',
-    'Disallow: /oauth2',
     `Sitemap: ${siteUrl}/sitemap.xml`,
   ].join('\n');
 });

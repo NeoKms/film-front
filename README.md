@@ -47,4 +47,6 @@ npm run lint:check
 npm test
 npm run generate
 npm run preview
+# после npm run build
+npm run test:seo
 ```
