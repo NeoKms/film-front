@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SelectOption } from '~/types';
 import type {
   AdminFilmStatus,
   ModerationAction,
@@ -88,6 +89,12 @@ const search = ref('');
 const filmStatus = ref<AdminFilmStatus>('pending');
 const missing = ref('');
 const groupId = ref('');
+const selectedCountries = ref<SelectOption[]>([]);
+const selectedTags = ref<SelectOption[]>([]);
+const availableCountryIds = ref<string[] | null>(null);
+const availableTagIds = ref<string[] | null>(null);
+const ratingFrom = ref<number | ''>('');
+const ratingTo = ref<number | ''>('');
 const items = ref<AdminFilm[]>([]);
 const groupOptions = ref<AdminReference[]>([]);
 const tagOptions = ref<AdminReference[]>([]);
@@ -147,6 +154,23 @@ const filmStatuses: Array<{ value: AdminFilmStatus; label: string }> = [
   { value: 'deleted', label: 'Скрытые' },
   { value: 'active', label: 'Все активные' },
 ];
+
+const availableCountryOptions = computed(() => {
+  const allowed = availableCountryIds.value
+    ? new Set(availableCountryIds.value)
+    : null;
+  return countryOptions.value
+    .filter(({ _id }) => !allowed || allowed.has(_id))
+    .map(({ _id, name }) => ({ value: _id, label: name }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+});
+const availableTagOptions = computed(() => {
+  const allowed = availableTagIds.value ? new Set(availableTagIds.value) : null;
+  return tagOptions.value
+    .filter(({ _id }) => !allowed || allowed.has(_id))
+    .map(({ _id, name }) => ({ value: _id, label: name }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+});
 
 const labels: Record<Section, string> = {
   dashboard: 'Дашборд',
@@ -314,11 +338,38 @@ async function loadFilms(reset = false) {
     if (search.value) params.set('search', search.value);
     if (missing.value) params.set('missing', missing.value);
     if (groupId.value) params.set('group_id', groupId.value);
-    const response = await wrappedFetch<{
-      items: AdminFilm[];
-      meta: { total: number };
-    }>(`/admin/films?${params}`);
+    if (selectedCountries.value.length)
+      params.set(
+        'countries',
+        selectedCountries.value.map(({ value }) => value).join(','),
+      );
+    if (selectedTags.value.length)
+      params.set(
+        'tags',
+        selectedTags.value.map(({ value }) => value).join(','),
+      );
+    if (ratingFrom.value !== '')
+      params.set('rating_from', String(ratingFrom.value));
+    if (ratingTo.value !== '') params.set('rating_to', String(ratingTo.value));
+    const filterOptionParams = new URLSearchParams(params);
+    filterOptionParams.delete('limit');
+    filterOptionParams.delete('offset');
+    const [response, filterOptions] = await Promise.all([
+      wrappedFetch<{
+        items: AdminFilm[];
+        meta: { total: number };
+      }>(`/admin/films?${params}`),
+      reset
+        ? wrappedFetch<{ country_ids: string[]; tag_ids: string[] }>(
+            `/admin/films/filter-options?${filterOptionParams}`,
+          )
+        : Promise.resolve(null),
+    ]);
     if (version !== requestVersion) return;
+    if (filterOptions) {
+      availableCountryIds.value = filterOptions.country_ids;
+      availableTagIds.value = filterOptions.tag_ids;
+    }
     items.value = appendUniqueFilms(items.value, response.items);
     serverOffset.value += response.items.length;
     total.value = response.meta.total;
@@ -367,6 +418,12 @@ async function select(next: Section) {
   filmStatus.value = 'pending';
   missing.value = '';
   groupId.value = '';
+  selectedCountries.value = [];
+  selectedTags.value = [];
+  availableCountryIds.value = null;
+  availableTagIds.value = null;
+  ratingFrom.value = '';
+  ratingTo.value = '';
   moderationMode.value = false;
   selected.value = null;
   selectedOriginal.value = null;
@@ -590,6 +647,16 @@ async function applyFilters() {
   moderationMode.value = filmStatus.value === 'pending' && moderationMode.value;
   if (section.value === 'films') await loadFilms(true);
   else await refresh();
+}
+
+async function updateCountryFilters(options: SelectOption[]) {
+  selectedCountries.value = options;
+  await applyFilters();
+}
+
+async function updateTagFilters(options: SelectOption[]) {
+  selectedTags.value = options;
+  await applyFilters();
 }
 
 async function remove(item: Pick<AdminFilm, '_id' | 'name'>) {
@@ -1046,16 +1113,16 @@ onBeforeUnmount(() =>
               </button>
             </div>
           </div>
-          <div class="mb-4 flex flex-wrap items-center gap-2">
+          <div class="admin-filters mb-4">
             <input
               v-model="search"
               placeholder="Поиск"
-              class="rounded-xl border border-white/15 bg-zinc-950 px-3 py-2 text-sm text-white"
+              class="admin-filter-control"
               @keyup.enter="applyFilters"
             /><select
               v-if="section === 'films'"
               v-model="missing"
-              class="rounded-xl border border-white/15 bg-zinc-950 px-3 py-2 text-sm text-white"
+              class="admin-filter-control"
               @change="applyFilters"
             >
               <option value="">Любая заполненность</option>
@@ -1068,7 +1135,7 @@ onBeforeUnmount(() =>
             ><select
               v-if="section === 'films'"
               v-model="groupId"
-              class="rounded-xl border border-white/15 bg-zinc-950 px-3 py-2 text-sm text-white"
+              class="admin-filter-control"
               @change="applyFilters"
             >
               <option value="">Все подборки</option>
@@ -1078,11 +1145,55 @@ onBeforeUnmount(() =>
                 :value="group._id"
               >
                 {{ group.name }}
-              </option></select
-            ><button
-              class="rounded-xl bg-white/10 px-4 py-2 text-sm text-white"
-              @click="applyFilters"
-            >
+              </option>
+            </select>
+            <div v-if="section === 'films'" class="admin-reference-filter">
+              <span>Страны · {{ availableCountryOptions.length }}</span>
+              <design-system-multiselect
+                aria-label="Выбрать страны"
+                :options="availableCountryOptions"
+                :selected-options="selectedCountries"
+                @update:selected-options="updateCountryFilters"
+              />
+            </div>
+            <div v-if="section === 'films'" class="admin-reference-filter">
+              <span>Жанры · {{ availableTagOptions.length }}</span>
+              <design-system-multiselect
+                aria-label="Выбрать жанры"
+                :options="availableTagOptions"
+                :selected-options="selectedTags"
+                @update:selected-options="updateTagFilters"
+              />
+            </div>
+            <div v-if="section === 'films'" class="admin-rating-range">
+              <label class="admin-rating-filter">
+                <span>Рейтинг от</span>
+                <input
+                  v-model.number="ratingFrom"
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  inputmode="decimal"
+                  class="admin-filter-control"
+                  @keyup.enter="applyFilters"
+                />
+              </label>
+              <label class="admin-rating-filter">
+                <span>до</span>
+                <input
+                  v-model.number="ratingTo"
+                  type="number"
+                  min="1"
+                  max="10"
+                  step="0.1"
+                  inputmode="decimal"
+                  class="admin-filter-control"
+                  @keyup.enter="applyFilters"
+                />
+              </label>
+            </div>
+            <button class="admin-filter-button" @click="applyFilters">
               Найти</button
             ><button
               v-if="section !== 'films'"
@@ -1090,7 +1201,9 @@ onBeforeUnmount(() =>
               @click="createReference"
             >
               Добавить</button
-            ><span class="text-sm text-zinc-500">{{ total }} записей</span>
+            ><span class="admin-filter-total text-zinc-500"
+              >{{ total }} записей</span
+            >
           </div>
           <section
             v-if="section === 'films' && moderationMode"
@@ -1921,6 +2034,63 @@ onBeforeUnmount(() =>
   box-shadow: 0 12px 28px rgb(0 0 0 / 25%);
   backdrop-filter: blur(12px);
 }
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.admin-filter-control {
+  min-height: 40px;
+  min-width: 0;
+  border: 1px solid rgb(255 255 255 / 15%);
+  border-radius: 12px;
+  background: #18181b;
+  padding: 8px 12px;
+  color: #fff;
+  font-size: 14px;
+}
+.admin-rating-filter {
+  display: grid;
+  gap: 4px;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+.admin-rating-range {
+  display: flex;
+  gap: 8px;
+}
+.admin-reference-filter {
+  display: grid;
+  width: 220px;
+  gap: 4px;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+.admin-reference-filter :deep(button[aria-expanded]) {
+  min-height: 40px;
+  border-radius: 12px;
+  background: #18181b;
+  padding: 8px 12px;
+}
+.admin-reference-filter :deep(.absolute) {
+  min-width: 280px;
+}
+.admin-rating-filter .admin-filter-control {
+  width: 96px;
+}
+.admin-filter-button {
+  min-height: 40px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 10%);
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 14px;
+}
+.admin-filter-total {
+  align-self: center;
+  font-size: 14px;
+}
 .film-status-tabs {
   display: flex;
   gap: 6px;
@@ -2390,6 +2560,33 @@ onBeforeUnmount(() =>
   }
   .moderation-toolbar {
     top: 4px;
+  }
+  .admin-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-filter-control,
+  .admin-filter-button,
+  .admin-rating-filter .admin-filter-control {
+    width: 100%;
+  }
+  .admin-rating-range {
+    grid-column: 1 / -1;
+  }
+  .admin-reference-filter {
+    width: 100%;
+  }
+  .admin-reference-filter :deep(.absolute) {
+    min-width: 100%;
+  }
+  .admin-rating-filter {
+    min-width: 0;
+    flex: 1 1 0;
+  }
+  .admin-filters > input:first-child,
+  .admin-filter-button,
+  .admin-filter-total {
+    grid-column: 1 / -1;
   }
   .moderation-summary {
     align-items: flex-start;
