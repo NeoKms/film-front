@@ -58,6 +58,5 @@ export default defineNuxtConfig({
 
   devServer: {
     port: 3000,
-    // host: 'vlad.dev.lan',
   },
 });

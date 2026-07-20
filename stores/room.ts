@@ -1,4 +1,4 @@
-import type { SelectOption } from '~/types';
+import type { ERoomFilmOrder, SelectOption } from '~/types';
 import type { IFilmFilter, IFilmItem } from '~/stores/film';
 
 export enum ERoomStatus {
@@ -12,6 +12,7 @@ export interface RoomParticipant {
 }
 
 export interface ISettingFilmFilters {
+  order: ERoomFilmOrder;
   groups: SelectOption[];
   tags: SelectOption[];
   tagsMode: 'include' | 'exclude';

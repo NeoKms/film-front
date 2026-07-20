@@ -1,4 +1,7 @@
+import type { ERoomFilmOrder } from '~/types';
+
 export interface IFilmFilter {
+  order?: ERoomFilmOrder;
   search?: string;
   ids?: string[];
   group_id?: string;

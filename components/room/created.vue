@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import QRCode from 'qrcode';
 import type { IFilmFilter } from '~/stores/film';
+import { ERoomFilmOrder } from '~/types';
 import type { RoomParticipant } from '~/stores/room';
 
 const roomStore = useRoomStore();
@@ -44,6 +45,20 @@ const filterSummary = computed(() => {
   if (value.rating_from) result.push(`Рейтинг от ${value.rating_from}`);
   return result.length ? result : ['Без ограничений'];
 });
+const orderLabels: Record<ERoomFilmOrder, string> = {
+  [ERoomFilmOrder.yearDesc]: 'Сначала новые',
+  [ERoomFilmOrder.yearAsc]: 'Сначала старые',
+  [ERoomFilmOrder.ratingDesc]: 'Сначала с высоким рейтингом',
+  [ERoomFilmOrder.ratingAsc]: 'Сначала с низким рейтингом',
+  [ERoomFilmOrder.nameAsc]: 'По названию · А–Я',
+  [ERoomFilmOrder.nameDesc]: 'По названию · Я–А',
+  [ERoomFilmOrder.durationAsc]: 'Сначала короткие',
+  [ERoomFilmOrder.durationDesc]: 'Сначала длинные',
+  [ERoomFilmOrder.random]: 'Случайный порядок',
+};
+const orderSummary = computed(
+  () => orderLabels[room.value.film_filter.order ?? ERoomFilmOrder.yearDesc],
+);
 
 const {
   data: totalFilms,
@@ -173,12 +188,16 @@ const kickParticipant = async () => {
       <div class="mt-6 rounded-2xl border border-white/5 bg-black/15 p-4">
         <div class="flex items-center justify-between gap-4">
           <span class="text-xs uppercase tracking-widest text-zinc-600"
-            >Фильтры</span
+            >Выборка</span
           ><span class="text-sm text-zinc-300">{{
             totalStatus === 'success' ? `${totalFilms} фильмов` : 'Считаем…'
           }}</span>
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
+          <span
+            class="rounded-full bg-amber-300/10 px-3 py-1.5 text-xs text-amber-200"
+            >{{ orderSummary }}</span
+          >
           <span
             v-for="item in filterSummary"
             :key="item"
@@ -257,12 +276,14 @@ const kickParticipant = async () => {
         :src="qrCodeUrl"
         alt="QR-код приглашения"
         class="mx-auto w-full max-w-sm rounded-2xl bg-white p-3"
-      >
+      />
       <p class="mt-4 text-center font-mono tracking-widest text-amber-300">
         {{ room.code }}
       </p></design-system-modal
     >
-    <design-system-modal v-model:is-open="showSettings" title="Фильтры комнаты"
+    <design-system-modal
+      v-model:is-open="showSettings"
+      title="Настройки комнаты"
       ><room-settings :filters="room.film_filter" @save-filters="saveFilters"
     /></design-system-modal>
     <design-system-modal

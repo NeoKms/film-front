@@ -52,10 +52,12 @@ export const mapSettingsToFilmFilter = (
   if (filter.groups.length) {
     return {
       groups: filter.groups.map((el) => el.value.toString()),
+      order: filter.order,
     };
   }
   const nowYear = new Date().getFullYear();
   return {
+    order: filter.order,
     actors:
       filter.actors.length && filter.actorsMode === 'include'
         ? filter.actors.map((el) => el.value.toString())

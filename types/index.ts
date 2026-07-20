@@ -2,6 +2,17 @@ export enum EAuthProvider {
   google = 'google',
   local = 'local',
 }
+export enum ERoomFilmOrder {
+  yearDesc = 'year_desc',
+  yearAsc = 'year_asc',
+  ratingDesc = 'rating_desc',
+  ratingAsc = 'rating_asc',
+  nameAsc = 'name_asc',
+  nameDesc = 'name_desc',
+  durationAsc = 'duration_asc',
+  durationDesc = 'duration_desc',
+  random = 'random',
+}
 export type Nullable<T> = T | null;
 export type Optional<T> = T | undefined;
 

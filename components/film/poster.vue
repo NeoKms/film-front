@@ -7,6 +7,7 @@ const props = withDefaults(
   }>(),
   { src: null, variant: 'film' },
 );
+const emit = defineEmits<{ availability: [available: boolean] }>();
 const failed = ref(false);
 const usableSource = computed(() => !isMissingImageUrl(props.src));
 const fallbackSource = computed(() =>
@@ -19,11 +20,22 @@ watch(
   () => props.src,
   () => {
     failed.value = false;
+    emit('availability', !isMissingImageUrl(props.src));
   },
 );
 const handleLoad = (event: Event) => {
-  if (isRedirectedKinopoiskPlaceholder(event.currentTarget as HTMLImageElement))
+  if (
+    isRedirectedKinopoiskPlaceholder(event.currentTarget as HTMLImageElement)
+  ) {
     failed.value = true;
+    emit('availability', false);
+  } else {
+    emit('availability', true);
+  }
+};
+const handleError = () => {
+  failed.value = true;
+  emit('availability', false);
 };
 </script>
 
@@ -37,7 +49,7 @@ const handleLoad = (event: Event) => {
       :alt="alt"
       class="h-full w-full object-cover"
       @load="handleLoad"
-      @error="failed = true"
+      @error="handleError"
     >
     <template v-else>
       <img

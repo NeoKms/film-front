@@ -31,6 +31,30 @@ const positionLabels: Record<EPersonPosition, string> = {
   [EPersonPosition.Composers]: 'Композиторы',
 };
 const positionOrder = Object.values(EPersonPosition);
+const unavailablePhotos = ref(new Set<string>());
+const peopleScroller = ref<HTMLElement | null>(null);
+const personKey = (person: IFilmItem['person_items'][number]) =>
+  `${person.position}:${person.name}:${person.photo_url ?? ''}`;
+const setPhotoAvailability = (
+  person: IFilmItem['person_items'][number],
+  available: boolean,
+) => {
+  const next = new Set(unavailablePhotos.value);
+  const key = personKey(person);
+  const wasUnavailable = next.has(key);
+  if (wasUnavailable === !available) return;
+  if (available) next.delete(key);
+  else next.add(key);
+  unavailablePhotos.value = next;
+  void nextTick(() => {
+    if (peopleScroller.value) peopleScroller.value.scrollLeft = 0;
+  });
+};
+const isPersonPhotoUnavailable = (
+  person: IFilmItem['person_items'][number],
+) =>
+  isMissingImageUrl(person.photo_url) ||
+  unavailablePhotos.value.has(personKey(person));
 const peopleGroups = computed(() => {
   const grouped = new Map<string, IFilmItem['person_items']>();
   for (const person of film.value?.person_items ?? []) {
@@ -47,7 +71,11 @@ const peopleGroups = computed(() => {
     .map(([position, people]) => ({
       key: position,
       label: positionLabels[position as EPersonPosition] ?? position,
-      people,
+      people: [...people].sort(
+        (left, right) =>
+          Number(isPersonPhotoUnavailable(left)) -
+          Number(isPersonPhotoUnavailable(right)),
+      ),
     }));
 });
 const activeTeamKey = ref('');
@@ -84,10 +112,7 @@ const trailerEmbedUrl = computed(() => {
       const id = url.pathname.match(/\/video\/(?:private\/)?([^/]+)/)?.[1];
       return id ? `https://rutube.ru/play/embed/${id}` : null;
     }
-    if (host === 'play.poiskkino.dev') {
-      url.protocol = 'https:';
-      return url.toString();
-    }
+    if (host.split('.').some((part) => part.includes('poiskkino'))) return null;
     return url.toString();
   } catch {
     return null;
@@ -129,7 +154,7 @@ useSeoMeta({ robots: 'noindex, nofollow' });
           alt=""
           class="absolute inset-0 h-full w-full object-cover opacity-25"
           aria-hidden="true"
-        >
+        />
         <div
           class="absolute inset-0 bg-gradient-to-r from-[#111318] via-[#111318]/90 to-[#111318]/50"
         />
@@ -266,6 +291,7 @@ useSeoMeta({ robots: 'noindex, nofollow' });
           </button>
         </div>
         <div
+          ref="peopleScroller"
           class="-mr-5 mt-4 flex snap-x snap-proximity gap-3 overflow-x-auto pb-2 pr-5 sm:mr-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pr-0 lg:grid-cols-8"
         >
           <article
@@ -279,6 +305,7 @@ useSeoMeta({ robots: 'noindex, nofollow' });
               :alt="person.name"
               variant="person"
               class="aspect-square rounded-2xl"
+              @availability="setPhotoAvailability(person, $event)"
             />
             <p
               class="mt-2 line-clamp-2 text-xs font-medium leading-4 text-white"

@@ -1,9 +1,85 @@
 <script setup lang="ts">
+import { ERoomFilmOrder } from '~/types';
+
 const tagStore = useTagStore();
 const countryStore = useCountryStore();
 const personStore = usePersonStore();
 const filmGroupStore = useFilmGroupStore();
 const filmStore = useFilmStore();
+
+type OrderCriterion = 'year' | 'rating' | 'name' | 'duration' | 'random';
+
+const orderCriteria: Array<{
+  value: OrderCriterion;
+  icon: string;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: 'year',
+    icon: 'lucide:calendar-days',
+    label: 'По году',
+    description: 'Новинки или классика',
+  },
+  {
+    value: 'rating',
+    icon: 'lucide:star',
+    label: 'По рейтингу',
+    description: 'Лучшие или необычные',
+  },
+  {
+    value: 'name',
+    icon: 'lucide:arrow-down-a-z',
+    label: 'По названию',
+    description: 'По алфавиту',
+  },
+  {
+    value: 'duration',
+    icon: 'lucide:clock-3',
+    label: 'По длительности',
+    description: 'Короче или длиннее',
+  },
+  {
+    value: 'random',
+    icon: 'lucide:shuffle',
+    label: 'Перемешать',
+    description: 'Новый случайный порядок',
+  },
+];
+
+const orderDirections: Record<
+  Exclude<OrderCriterion, 'random'>,
+  Array<{ value: ERoomFilmOrder; label: string }>
+> = {
+  year: [
+    { value: ERoomFilmOrder.yearDesc, label: 'Сначала новые' },
+    { value: ERoomFilmOrder.yearAsc, label: 'Сначала старые' },
+  ],
+  rating: [
+    { value: ERoomFilmOrder.ratingDesc, label: 'Сначала высокий' },
+    { value: ERoomFilmOrder.ratingAsc, label: 'Сначала низкий' },
+  ],
+  name: [
+    { value: ERoomFilmOrder.nameAsc, label: 'От А до Я' },
+    { value: ERoomFilmOrder.nameDesc, label: 'От Я до А' },
+  ],
+  duration: [
+    { value: ERoomFilmOrder.durationAsc, label: 'Сначала короткие' },
+    { value: ERoomFilmOrder.durationDesc, label: 'Сначала длинные' },
+  ],
+};
+
+const criterionByOrder: Record<ERoomFilmOrder, OrderCriterion> = {
+  [ERoomFilmOrder.yearDesc]: 'year',
+  [ERoomFilmOrder.yearAsc]: 'year',
+  [ERoomFilmOrder.ratingDesc]: 'rating',
+  [ERoomFilmOrder.ratingAsc]: 'rating',
+  [ERoomFilmOrder.nameAsc]: 'name',
+  [ERoomFilmOrder.nameDesc]: 'name',
+  [ERoomFilmOrder.durationAsc]: 'duration',
+  [ERoomFilmOrder.durationDesc]: 'duration',
+  [ERoomFilmOrder.random]: 'random',
+};
 
 const props = defineProps<{ filters: IFilmFilter }>();
 const emit = defineEmits(['save-filters']);
@@ -11,6 +87,7 @@ const emit = defineEmits(['save-filters']);
 const nowYear = new Date().getFullYear();
 
 const localFilters = reactive<ISettingFilmFilters>({
+  order: props.filters.order ?? ERoomFilmOrder.yearDesc,
   groups: [],
   tags: [],
   tagsMode: props.filters.exclude_tags?.length ? 'exclude' : 'include',
@@ -25,6 +102,20 @@ const localFilters = reactive<ISettingFilmFilters>({
   ageRatings: props.filters.age_ratings ?? [],
   mpaaRatings: props.filters.mpaa_ratings ?? [],
 });
+const selectedOrderCriterion = computed<OrderCriterion>(
+  () => criterionByOrder[localFilters.order]!,
+);
+const selectedOrderDirections = computed(() =>
+  selectedOrderCriterion.value === 'random'
+    ? []
+    : orderDirections[selectedOrderCriterion.value],
+);
+const selectOrderCriterion = (criterion: OrderCriterion) => {
+  localFilters.order =
+    criterion === 'random'
+      ? ERoomFilmOrder.random
+      : orderDirections[criterion][0]!.value;
+};
 const totalFilms = ref<number | null>(null);
 const totalFilmsStatus = ref<'idle' | 'pending' | 'success' | 'error'>('idle');
 let totalTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -277,8 +368,8 @@ const saveFilters = () => {
 };
 
 const hasActiveFilters = computed(() =>
-  Object.values(mapSettingsToFilmFilter(localFilters)).some(
-    (value) => value !== undefined,
+  Object.entries(mapSettingsToFilmFilter(localFilters)).some(
+    ([key, value]) => key !== 'order' && value !== undefined,
   ),
 );
 
@@ -311,6 +402,66 @@ const resetFilters = () => {
       </button>
     </div>
     <div class="space-y-6">
+      <fieldset>
+        <legend class="text-sm font-medium text-zinc-100">
+          Порядок карточек
+        </legend>
+        <p class="mt-1 text-xs leading-5 text-zinc-500">
+          Один порядок для всех участников. Он зафиксируется при старте комнаты.
+        </p>
+        <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button
+            v-for="criterion in orderCriteria"
+            :key="criterion.value"
+            type="button"
+            class="min-h-[5.25rem] rounded-2xl border p-3 text-left transition"
+            :class="
+              [
+                selectedOrderCriterion === criterion.value
+                  ? 'border-amber-300 bg-amber-300/[0.12] text-amber-100'
+                  : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/20',
+                criterion.value === 'random'
+                  ? 'col-span-2 sm:col-span-1'
+                  : '',
+              ]
+            "
+            :aria-pressed="selectedOrderCriterion === criterion.value"
+            @click="selectOrderCriterion(criterion.value)"
+          >
+            <span class="flex items-center gap-2 text-sm font-medium">
+              <icon :name="criterion.icon" class="size-4" />
+              {{ criterion.label }}
+            </span>
+            <span class="mt-1.5 block text-[11px] leading-4 text-zinc-500">
+              {{ criterion.description }}
+            </span>
+          </button>
+        </div>
+        <div
+          v-if="selectedOrderDirections.length"
+          class="mt-2 grid grid-cols-2 rounded-xl bg-black/20 p-1 text-xs"
+        >
+          <button
+            v-for="direction in selectedOrderDirections"
+            :key="direction.value"
+            type="button"
+            class="min-h-10 rounded-lg px-2 transition"
+            :class="
+              localFilters.order === direction.value
+                ? 'bg-white/10 text-white shadow-sm'
+                : 'text-zinc-500 hover:text-zinc-300'
+            "
+            :aria-pressed="localFilters.order === direction.value"
+            @click="localFilters.order = direction.value"
+          >
+            {{ direction.label }}
+          </button>
+        </div>
+        <p v-else class="mt-3 text-xs leading-5 text-amber-200/80">
+          Карточки перемешаются один раз и появятся у всех в одинаковом порядке.
+        </p>
+      </fieldset>
+
       <div
         class="rounded-2xl border border-amber-300/25 bg-amber-300/[0.06] p-4"
       >

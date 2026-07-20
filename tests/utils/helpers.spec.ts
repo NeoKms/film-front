@@ -5,10 +5,12 @@ import {
   toQueryParams,
 } from '../../utils/helpers';
 import type { ISettingFilmFilters } from '../../stores/room';
+import { ERoomFilmOrder } from '../../types';
 
 const createSettings = (
   overrides: Partial<ISettingFilmFilters> = {},
 ): ISettingFilmFilters => ({
+  order: ERoomFilmOrder.yearDesc,
   groups: [],
   tags: [],
   tagsMode: 'include',
@@ -71,7 +73,10 @@ describe('mapSettingsToFilmFilter', () => {
       }),
     );
 
-    expect(filter).toEqual({ groups: ['group-1', '2'] });
+    expect(filter).toEqual({
+      groups: ['group-1', '2'],
+      order: ERoomFilmOrder.yearDesc,
+    });
   });
 
   test('maps include and exclude modes to separate API fields', () => {

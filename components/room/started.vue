@@ -16,6 +16,7 @@ const isOwner = computed(
 const deciding = ref(false);
 const showMatches = ref(false);
 const showCloseConfirm = ref(false);
+const detailsFilm = ref<IFilmItem | null>(null);
 const finalizingFilm = ref<IFilmItem | null>(null);
 const finalizing = ref(false);
 const repeating = ref(false);
@@ -98,6 +99,11 @@ const filmDetailsLocation = (filmId: string) => ({
   path: `/film/${filmId}`,
   query: { from: route.fullPath },
 });
+
+const openFilmDetails = (film: IFilmItem) => {
+  showMatches.value = false;
+  detailsFilm.value = film;
+};
 
 const chooseFinalFilm = async () => {
   if (!finalizingFilm.value || finalizing.value) return;
@@ -283,7 +289,7 @@ const shareFinalFilm = async () => {
           :busy="deciding"
           class="absolute inset-0"
           @decide="decide"
-          @details="navigateTo(filmDetailsLocation(currentFilm._id))"
+          @details="openFilmDetails(currentFilm)"
         />
         <div
           v-else-if="roomStore.batchLoading"
@@ -400,16 +406,22 @@ const shareFinalFilm = async () => {
         :key="film._id"
         class="group"
       >
-        <NuxtLink :to="filmDetailsLocation(film._id)"
-          ><film-poster
+        <button
+          type="button"
+          class="w-full text-left"
+          :aria-label="`Открыть подробности: ${film.name}`"
+          @click="openFilmDetails(film)"
+        >
+          <film-poster
             :src="film.poster_url"
             :alt="film.name"
             class="aspect-[2/3] rounded-xl transition group-hover:scale-[1.02]"
           />
           <p class="mt-2 line-clamp-2 text-sm font-medium text-white">
             {{ film.name }}
-          </p></NuxtLink
-        ><button
+          </p>
+        </button>
+        <button
           v-if="isOwner"
           type="button"
           class="mt-3 min-h-10 w-full rounded-xl bg-amber-300 px-3 text-xs font-semibold text-zinc-950"
@@ -443,6 +455,19 @@ const shareFinalFilm = async () => {
         >Завершить комнату</design-system-button
       >
     </div>
+  </design-system-modal>
+
+  <design-system-modal
+    :is-open="Boolean(detailsFilm)"
+    :title="detailsFilm?.name"
+    size="wide"
+    @update:is-open="
+      (open) => {
+        if (!open) detailsFilm = null;
+      }
+    "
+  >
+    <film-details-panel v-if="detailsFilm" :film="detailsFilm" />
   </design-system-modal>
 
   <design-system-modal

@@ -71,7 +71,14 @@ export const useRoomRealtime = () => {
         void navigateTo('/');
         return;
       }
+      const roomWasClosed =
+        roomStore.openedRoom?._id === room._id &&
+        roomStore.openedRoom.status !== ERoomStatus.closed &&
+        room.status === ERoomStatus.closed;
       roomStore.applyRoomUpdate(room);
+      if (roomWasClosed) {
+        notificationStore.addNotification('Комната завершена', 'success');
+      }
     });
     client.on('room.new-match', (payload: RoomNewMatchPayload) => {
       if (payload.room_id !== roomId) return;
