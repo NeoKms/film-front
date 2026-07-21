@@ -185,6 +185,14 @@ export const useRoomStore = defineStore('room', () => {
       method: 'POST',
     });
   };
+  const undoDecision = async (
+    roomId: string,
+    filmId: string,
+  ): Promise<void> => {
+    await wrappedFetch(`/room/${roomId}/films/${filmId}/decision`, {
+      method: 'DELETE',
+    });
+  };
 
   const loadMatchedFilms = async (id: string): Promise<IFilmItem[]> => {
     matchedFilms.value = await wrappedFetch<IFilmItem[]>(
@@ -239,6 +247,7 @@ export const useRoomStore = defineStore('room', () => {
     loadFilmBatch,
     ensureFilmBatch,
     decide,
+    undoDecision,
     loadMatchedFilms,
     ensureMatchedFilms,
     applyRoomUpdate,

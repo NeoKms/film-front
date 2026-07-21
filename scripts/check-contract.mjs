@@ -11,6 +11,7 @@ const requiredRoomFragments = [
   '/room/${id}/films',
   '/room/${id}/films/matched',
   '/room/${roomId}/films/${filmId}/${direction}',
+  '/room/${roomId}/films/${filmId}/decision',
 ];
 const requiredEvents = ['room.join', 'room.joined', 'room.update', 'room.new-match'];
 

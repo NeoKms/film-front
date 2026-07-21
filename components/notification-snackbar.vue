@@ -9,7 +9,11 @@ const notificationClasses = {
 </script>
 
 <template>
-  <div class="pointer-events-none fixed inset-x-4 bottom-4 z-[70] flex flex-col items-center space-y-2 sm:left-auto sm:right-5 sm:items-end" role="status" aria-live="polite">
+  <div
+    class="pointer-events-none fixed inset-x-4 top-[calc(env(safe-area-inset-top)+5rem)] z-[70] flex flex-col items-center space-y-2 sm:bottom-5 sm:left-auto sm:right-5 sm:top-auto sm:items-end"
+    role="status"
+    aria-live="polite"
+  >
     <transition-group name="fade">
       <div
         v-for="notification in notificationStore.notifications"
@@ -34,10 +38,16 @@ const notificationClasses = {
 }
 .fade-enter-from {
   opacity: 0;
-  transform: translateY(10px);
+  transform: translateY(-10px);
 }
 .fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
+}
+
+@media (min-width: 640px) {
+  .fade-enter-from {
+    transform: translateY(10px);
+  }
 }
 </style>

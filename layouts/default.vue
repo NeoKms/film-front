@@ -1,4 +1,7 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+const route = useRoute();
+const showFooter = computed(() => !route.path.startsWith('/room/'));
+</script>
 
 <template>
   <div class="min-h-screen bg-[#0b0d12] text-zinc-100">
@@ -6,7 +9,7 @@
     <main>
       <slot />
     </main>
-    <app-footer />
+    <app-footer v-if="showFooter" />
     <app-cookie-notice />
   </div>
 </template>

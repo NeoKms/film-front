@@ -85,7 +85,7 @@ describe('room store', () => {
     );
   });
 
-  test('sends start, decision and finalize commands with exact contract', async () => {
+  test('sends start, decision, undo and finalize commands with exact contract', async () => {
     const { store, ERoomStatus, wrappedFetch, track, lastRoomId } =
       await setupStore();
     const startedRoom = { _id: 'room-1', status: ERoomStatus.started };
@@ -93,10 +93,12 @@ describe('room store', () => {
     wrappedFetch
       .mockResolvedValueOnce(startedRoom)
       .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
       .mockResolvedValueOnce(closedRoom);
 
     await store.startRoom('room-1');
     await store.decide('room-1', 'film-1', 'select');
+    await store.undoDecision('room-1', 'film-1');
     await store.finalizeRoom('room-1', 'film-1');
 
     expect(wrappedFetch).toHaveBeenNthCalledWith(1, '/room/room-1/start', {
@@ -107,7 +109,12 @@ describe('room store', () => {
       '/room/room-1/films/film-1/select',
       { method: 'POST' },
     );
-    expect(wrappedFetch).toHaveBeenNthCalledWith(3, '/room/room-1/finalize', {
+    expect(wrappedFetch).toHaveBeenNthCalledWith(
+      3,
+      '/room/room-1/films/film-1/decision',
+      { method: 'DELETE' },
+    );
+    expect(wrappedFetch).toHaveBeenNthCalledWith(4, '/room/room-1/finalize', {
       method: 'POST',
       body: { film_id: 'film-1' },
     });

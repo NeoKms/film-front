@@ -1,11 +1,20 @@
 <template>
-  <footer class="border-t border-white/10 bg-black/15 px-5 py-8">
+  <footer class="border-t border-white/10 bg-black/15 px-5 py-5 sm:py-8">
     <div
-      class="mx-auto grid max-w-6xl gap-7 text-sm text-zinc-400 lg:grid-cols-[1fr_auto_auto]"
+      class="mx-auto grid max-w-6xl gap-3 text-sm text-zinc-400 sm:gap-7 lg:grid-cols-[1fr_auto_auto]"
     >
-      <p>© {{ new Date().getFullYear() }} Film Together. Все права защищены.</p>
-      <nav class="grid gap-3" aria-label="Сценарии выбора фильма">
-        <span class="text-xs uppercase tracking-widest text-zinc-400"
+      <p class="order-3 text-xs lg:order-none lg:text-sm">
+        © {{ new Date().getFullYear() }} Film Together<span
+          class="hidden sm:inline"
+          >. Все права защищены.</span
+        >
+      </p>
+      <nav
+        class="flex flex-wrap gap-x-4 gap-y-2 sm:grid sm:gap-3"
+        aria-label="Сценарии выбора фильма"
+      >
+        <span
+          class="hidden text-xs uppercase tracking-widest text-zinc-400 sm:block"
           >Сценарии</span
         >
         <NuxtLink to="/for-couples" class="transition hover:text-white"
@@ -18,8 +27,12 @@
           >Для компании</NuxtLink
         >
       </nav>
-      <nav class="grid gap-3" aria-label="Правовая информация">
-        <span class="text-xs uppercase tracking-widest text-zinc-400"
+      <nav
+        class="flex flex-wrap gap-x-4 gap-y-2 sm:grid sm:gap-3"
+        aria-label="Правовая информация"
+      >
+        <span
+          class="hidden text-xs uppercase tracking-widest text-zinc-400 sm:block"
           >Документы</span
         >
         <NuxtLink to="/legal/privacy" class="transition hover:text-white"

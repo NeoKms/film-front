@@ -19,18 +19,23 @@ export const useRoomRealtime = () => {
   const notificationStore = useNotificationStore();
   const socket = shallowRef<Socket | null>(null);
   const connected = ref(false);
+  const connectionStarted = ref(false);
+  const connecting = ref(false);
   const subscribed = ref(false);
 
   const disconnect = () => {
     socket.value?.disconnect();
     socket.value = null;
     connected.value = false;
+    connecting.value = false;
     subscribed.value = false;
   };
 
   const connect = (roomId: string, onNewMatch?: (filmId: string) => void) => {
-    if (!import.meta.client || !runtimeConfig.public.SOCKET_URL) return;
     disconnect();
+    connectionStarted.value = true;
+    if (!import.meta.client || !runtimeConfig.public.SOCKET_URL) return;
+    connecting.value = true;
 
     const client = io(runtimeConfig.public.SOCKET_URL as string, {
       transports: ['websocket'],
@@ -42,6 +47,7 @@ export const useRoomRealtime = () => {
 
     const subscribeAndResync = async () => {
       connected.value = true;
+      connecting.value = false;
       client.emit('room.join', { room_id: roomId });
       await roomStore.openRoom(roomId);
     };
@@ -49,6 +55,12 @@ export const useRoomRealtime = () => {
     client.on('connect', subscribeAndResync);
     client.on('disconnect', () => {
       connected.value = false;
+      connecting.value = false;
+      subscribed.value = false;
+    });
+    client.on('connect_error', () => {
+      connected.value = false;
+      connecting.value = false;
       subscribed.value = false;
     });
     client.on('room.joined', (payload: RoomJoinedPayload) => {
@@ -76,6 +88,9 @@ export const useRoomRealtime = () => {
         roomStore.openedRoom.status !== ERoomStatus.closed &&
         room.status === ERoomStatus.closed;
       roomStore.applyRoomUpdate(room);
+      if (room.status !== ERoomStatus.created) {
+        void roomStore.loadMatchedFilms(roomId);
+      }
       if (roomWasClosed) {
         notificationStore.addNotification('Комната завершена', 'success');
       }
@@ -90,5 +105,12 @@ export const useRoomRealtime = () => {
 
   onBeforeUnmount(disconnect);
 
-  return { connected, subscribed, connect, disconnect };
+  return {
+    connected,
+    connectionStarted,
+    connecting,
+    subscribed,
+    connect,
+    disconnect,
+  };
 };

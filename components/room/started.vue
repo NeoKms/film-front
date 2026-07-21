@@ -20,9 +20,7 @@ const detailsFilm = ref<IFilmItem | null>(null);
 const finalizingFilm = ref<IFilmItem | null>(null);
 const finalizing = ref(false);
 const repeating = ref(false);
-const decisionHistory = ref<Array<{ film: IFilmItem; direction: Direction }>>(
-  [],
-);
+const decisionHistory = ref<IFilmItem[]>([]);
 const { track } = useProductAnalytics();
 const otherMatches = computed(() =>
   roomStore.matchedFilms.filter(
@@ -45,7 +43,7 @@ const decide = async (direction: Direction) => {
   try {
     await roomStore.decide(room.value._id, film._id, direction);
     if (!decisionHistory.value.length) track('first_decision');
-    decisionHistory.value.push({ film, direction });
+    decisionHistory.value.push(film);
     roomStore.filmBatch.shift();
     if (!roomStore.filmBatch.length)
       await roomStore.loadFilmBatch(room.value._id);
@@ -57,16 +55,20 @@ const decide = async (direction: Direction) => {
 };
 
 const undo = async () => {
-  const previous = decisionHistory.value.pop();
-  if (!previous || deciding.value) return;
+  if (deciding.value) return;
+  const previousFilm = decisionHistory.value.at(-1);
+  if (!previousFilm) return;
   deciding.value = true;
   try {
-    const inverse = previous.direction === 'select' ? 'deselect' : 'select';
-    await roomStore.decide(room.value._id, previous.film._id, inverse);
-    await roomStore.loadFilmBatch(room.value._id);
+    await roomStore.undoDecision(room.value._id, previousFilm._id);
+    await Promise.all([
+      roomStore.loadFilmBatch(room.value._id),
+      roomStore.loadMatchedFilms(room.value._id),
+    ]);
+    decisionHistory.value.pop();
     notificationStore.addNotification('Последний выбор отменён', 'success');
   } catch {
-    decisionHistory.value.push(previous);
+    // Keep the history entry so the same action can be retried.
   } finally {
     deciding.value = false;
   }
@@ -270,7 +272,7 @@ const shareFinalFilm = async () => {
     class="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-6"
   >
     <div class="order-2 mx-auto w-full max-w-[29rem] lg:order-1">
-      <div class="relative h-[min(65dvh,42rem)] min-h-[24rem]">
+      <div class="relative h-[min(65svh,42rem)] min-h-[24rem]">
         <div
           v-if="nextFilm"
           class="absolute inset-x-3 inset-y-2 overflow-hidden rounded-[1.75rem] opacity-50"
@@ -338,9 +340,11 @@ const shareFinalFilm = async () => {
           type="button"
           class="min-h-11 px-2 text-xs font-medium text-zinc-500 transition hover:text-white disabled:opacity-30"
           :disabled="!decisionHistory.length || deciding"
-          @click="undo"
+          aria-label="Отменить последний выбор"
+          @pointerdown.stop
+          @click.stop="undo"
         >
-          ↶ Назад
+          ↶ Отменить
         </button>
         <button
           type="button"
@@ -404,11 +408,11 @@ const shareFinalFilm = async () => {
       <article
         v-for="film in roomStore.matchedFilms"
         :key="film._id"
-        class="group"
+        class="group flex h-full flex-col"
       >
         <button
           type="button"
-          class="w-full text-left"
+          class="w-full flex-1 text-left"
           :aria-label="`Открыть подробности: ${film.name}`"
           @click="openFilmDetails(film)"
         >
@@ -417,7 +421,7 @@ const shareFinalFilm = async () => {
             :alt="film.name"
             class="aspect-[2/3] rounded-xl transition group-hover:scale-[1.02]"
           />
-          <p class="mt-2 line-clamp-2 text-sm font-medium text-white">
+          <p class="mt-2 min-h-10 line-clamp-2 text-sm font-medium text-white">
             {{ film.name }}
           </p>
         </button>
