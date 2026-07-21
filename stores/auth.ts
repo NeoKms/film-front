@@ -20,6 +20,32 @@ export interface IAuthByLogin {
   password: string;
 }
 
+const REFRESH_LOCK_NAME = 'film-together-auth-refresh';
+
+export const parseAuthCookies = (cookieHeader: string): IAuthResponse => {
+  const cookies = Object.fromEntries(
+    cookieHeader
+      .split(';')
+      .map((part) => part.trim().split('='))
+      .filter(([name]) => name)
+      .map(([name, ...value]) => [name, decodeURIComponent(value.join('='))]),
+  );
+  return {
+    access_token: cookies.accessToken ?? null,
+    refresh_token: cookies.refreshToken ?? null,
+  };
+};
+
+export const runWithRefreshLock = async <T>(
+  task: () => Promise<T>,
+  lockManager?: {
+    request: (name: string, callback: () => Promise<T>) => Promise<T>;
+  },
+): Promise<T> => {
+  if (!lockManager) return task();
+  return lockManager.request(REFRESH_LOCK_NAME, task);
+};
+
 export interface ISignUpByLogin extends IAuthByLogin {
   name: string;
 }
@@ -139,6 +165,35 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  function readClientTokens(): IAuthResponse {
+    return import.meta.client ? parseAuthCookies(document.cookie) : {};
+  }
+
+  function restoreUpdatedClientTokens(
+    previousAccessToken: Nullable<string>,
+    previousRefreshToken: Nullable<string>,
+  ): IAuthResponse | null {
+    if (!import.meta.client) return null;
+    const current = readClientTokens();
+    if (
+      !current.access_token ||
+      !current.refresh_token ||
+      (current.access_token === previousAccessToken &&
+        current.refresh_token === previousRefreshToken)
+    ) {
+      return null;
+    }
+    accessToken.value = current.access_token;
+    refreshToken.value = current.refresh_token;
+    return current;
+  }
+
+  function recoverTokensFromUpdatedCookies(
+    previousRefreshToken: Nullable<string>,
+  ): IAuthResponse | null {
+    return restoreUpdatedClientTokens(accessToken.value, previousRefreshToken);
+  }
+
   function clearTokens(): void {
     accessToken.value = null;
     refreshToken.value = null;
@@ -149,23 +204,35 @@ export const useAuthStore = defineStore('auth', () => {
   async function refreshSession(): Promise<IAuthResponse> {
     if (!refreshToken.value) throw new Error('Refresh token is missing');
     if (!refreshPromise) {
-      const token = refreshToken.value;
-      refreshPromise = $fetch<IAuthResponse>(
-        runtimeConfig.public.API_URL + '/auth/refresh',
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      )
-        .then((response) => {
-          setTokens(response);
-          return response;
-        })
-        .finally(() => {
-          refreshPromise = null;
-        });
+      const previousAccessToken = accessToken.value;
+      const previousRefreshToken = refreshToken.value;
+      const refresh = async (): Promise<IAuthResponse> => {
+        const restored = restoreUpdatedClientTokens(
+          previousAccessToken,
+          previousRefreshToken,
+        );
+        if (restored) return restored;
+        const currentRefreshToken =
+          readClientTokens().refresh_token ?? refreshToken.value;
+        if (!currentRefreshToken) throw new Error('Refresh token is missing');
+        const response = await $fetch<IAuthResponse>(
+          runtimeConfig.public.API_URL + '/auth/refresh',
+          {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${currentRefreshToken}` },
+          },
+        );
+        setTokens(response);
+        return response;
+      };
+      refreshPromise = runWithRefreshLock<IAuthResponse>(
+        refresh,
+        import.meta.client ? navigator.locks : undefined,
+      ).finally(() => {
+        refreshPromise = null;
+      });
     }
-    return refreshPromise;
+    return refreshPromise!;
   }
 
   async function signInByGoogle(code: string): Promise<boolean> {
@@ -248,6 +315,7 @@ export const useAuthStore = defineStore('auth', () => {
     signInByLogin,
     setTokens,
     refreshSession,
+    recoverTokensFromUpdatedCookies,
     guestProfile,
     ensureGuestProfile,
   };

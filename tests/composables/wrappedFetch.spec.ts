@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
     refreshSession: vi.fn(),
     clearTokens: vi.fn(),
     ensureGuestProfile: vi.fn(),
+    recoverTokensFromUpdatedCookies: vi.fn(),
   },
 }));
 
@@ -36,6 +37,7 @@ beforeEach(() => {
   mocks.authStore.refreshSession.mockReset();
   mocks.authStore.clearTokens.mockReset();
   mocks.authStore.ensureGuestProfile.mockReset();
+  mocks.authStore.recoverTokensFromUpdatedCookies.mockReset();
 });
 
 afterEach(() => {
@@ -150,5 +152,28 @@ describe('useWrappedFetch', () => {
 
     await expect(wrappedFetch('/room/1')).rejects.toBe(unauthorized);
     expect(mocks.authStore.clearTokens).toHaveBeenCalledTimes(1);
+  });
+
+  test('reuses credentials updated by another tab instead of clearing them', async () => {
+    const { wrappedFetch, fetchMock } = await setupWrappedFetch();
+    const unauthorized = { response: { status: 401 } };
+    fetchMock
+      .mockRejectedValueOnce(unauthorized)
+      .mockResolvedValueOnce({ ok: true });
+    mocks.authStore.refreshSession.mockRejectedValue(new Error('rotated'));
+    mocks.authStore.recoverTokensFromUpdatedCookies.mockReturnValue({
+      access_token: 'other-tab-access-token',
+      refresh_token: 'other-tab-refresh-token',
+    });
+
+    await expect(wrappedFetch('/room/1')).resolves.toEqual({ ok: true });
+    expect(mocks.authStore.clearTokens).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenNthCalledWith(2, 'http://api.test/room/1', {
+      timeout: 12_000,
+      headers: {
+        Authorization: 'Bearer other-tab-access-token',
+        'X-GUEST-ID': 'guest-id',
+      },
+    });
   });
 });

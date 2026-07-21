@@ -74,6 +74,7 @@ export const useWrappedFetch = () => {
         authStore.refreshToken &&
         !skipAuthRefresh
       ) {
+        const refreshTokenBeforeRequest = authStore.refreshToken;
         try {
           const response = await authStore.refreshSession();
           fetchOptions.headers = {
@@ -82,6 +83,16 @@ export const useWrappedFetch = () => {
           };
           return (await $fetch<DefaultT>(url, fetchOptions)) as DefaultT;
         } catch {
+          const recovered = authStore.recoverTokensFromUpdatedCookies(
+            refreshTokenBeforeRequest,
+          );
+          if (recovered?.access_token) {
+            fetchOptions.headers = {
+              ...fetchOptions.headers,
+              Authorization: `Bearer ${recovered.access_token}`,
+            };
+            return (await $fetch<DefaultT>(url, fetchOptions)) as DefaultT;
+          }
           authStore.clearTokens();
           if (import.meta.client) {
             await navigateTo('/sign-in');

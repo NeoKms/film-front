@@ -57,4 +57,32 @@ describe('auth store', () => {
       skipGuestBootstrap: true,
     });
   });
+
+  test('parses auth cookies without losing JWT separators', async () => {
+    const { parseAuthCookies } = await import('../../stores/auth');
+
+    expect(
+      parseAuthCookies(
+        'guest=guest-1; accessToken=header.payload.signature; refreshToken=refresh%2Etoken',
+      ),
+    ).toEqual({
+      access_token: 'header.payload.signature',
+      refresh_token: 'refresh.token',
+    });
+  });
+
+  test('serializes refresh work through a shared browser lock', async () => {
+    const { runWithRefreshLock } = await import('../../stores/auth');
+    const request = vi.fn(async (_name: string, task: () => Promise<string>) =>
+      task(),
+    );
+
+    await expect(
+      runWithRefreshLock(async () => 'refreshed', { request }),
+    ).resolves.toBe('refreshed');
+    expect(request).toHaveBeenCalledWith(
+      'film-together-auth-refresh',
+      expect.any(Function),
+    );
+  });
 });
