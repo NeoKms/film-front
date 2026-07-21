@@ -3,6 +3,11 @@ import { once } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
 
 const productionOrigin = 'https://film-together.com';
+const invitePath = '/room/join?code=416026';
+const inviteTitle = 'Вас приглашают выбрать фильм';
+const inviteDescription =
+  'Присоединяйтесь к комнате Film Together · код 416026';
+const defaultOgImage = `${productionOrigin}/images/og/film-together.png`;
 const publicRoutes = [
   '/',
   '/for-couples',
@@ -86,6 +91,7 @@ const stopServer = async (child) => {
 const read = (origin, path, options = {}) =>
   fetch(`${origin}${path}`, {
     redirect: options.redirect ?? 'follow',
+    headers: options.headers,
     signal: AbortSignal.timeout(5000),
   });
 
@@ -141,6 +147,38 @@ const checkPrivateRoutes = async (origin) => {
       response.headers.get('x-robots-tag') === 'noindex, nofollow, noarchive',
       `${path} must return a noindex X-Robots-Tag`,
     );
+  }
+};
+
+const checkInvitePreview = async (origin) => {
+  const crawlerUserAgents = [
+    'TelegramBot (like TwitterBot)',
+    'facebookexternalhit/1.1',
+  ];
+  const expectedMeta = [
+    ['property', 'og:title', inviteTitle],
+    ['property', 'og:description', inviteDescription],
+    ['property', 'og:url', `${productionOrigin}${invitePath}`],
+    ['property', 'og:image', defaultOgImage],
+    ['name', 'twitter:title', inviteTitle],
+    ['name', 'twitter:description', inviteDescription],
+    ['name', 'twitter:image', defaultOgImage],
+  ];
+
+  for (const userAgent of crawlerUserAgents) {
+    const response = await read(origin, invitePath, {
+      headers: { 'user-agent': userAgent },
+    });
+    const html = await response.text();
+    assert(response.status === 200, `invite must return 200 for ${userAgent}`);
+    for (const [attribute, key, value] of expectedMeta) {
+      assert(
+        new RegExp(
+          `<meta[^>]+${attribute}=["']${escapeRegExp(key)}["'][^>]+content=["']${escapeRegExp(value)}["']`,
+        ).test(html),
+        `invite must contain ${key} for ${userAgent}`,
+      );
+    }
   }
 };
 
@@ -202,6 +240,7 @@ try {
   server = await startServer({ environment: 'production', port: 3199 });
   await checkPublicRoutes(server.origin);
   await checkPrivateRoutes(server.origin);
+  await checkInvitePreview(server.origin);
   await checkProductionFiles(server.origin);
 } finally {
   if (server) await stopServer(server.child);
