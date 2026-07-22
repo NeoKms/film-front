@@ -185,9 +185,11 @@ const kickParticipant = async () => {
 </script>
 
 <template>
-  <div class="grid gap-4 lg:grid-cols-[1fr_0.8fr] lg:gap-5">
+  <div
+    class="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)] lg:gap-5"
+  >
     <section
-      class="rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-8"
+      class="min-w-0 rounded-3xl border border-white/10 bg-white/[0.04] p-5 sm:p-8"
     >
       <p class="text-sm text-zinc-400">Ждём остальных</p>
       <h1 class="mt-2 text-3xl font-medium text-white">Комната готова</h1>
@@ -307,7 +309,7 @@ const kickParticipant = async () => {
     </section>
 
     <aside
-      class="order-first rounded-3xl border border-amber-300/20 bg-amber-300/[0.06] p-5 lg:order-none sm:p-8"
+      class="order-first min-w-0 rounded-3xl border border-amber-300/20 bg-amber-300/[0.06] p-5 lg:order-none sm:p-8"
     >
       <p class="text-xs uppercase tracking-widest text-zinc-500">
         Код приглашения
