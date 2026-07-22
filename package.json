@@ -1,6 +1,6 @@
 {
   "name": "film-front",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "description": "Frontend app for matching films",
   "author": "Zhigulskii Vladislav",
@@ -21,6 +21,8 @@
     "test": "npm run test:contract && npm run test:unit",
     "test:contract": "node scripts/check-contract.mjs",
     "test:e2e": "playwright test",
+    "test:e2e:mobile-matrix": "playwright test --config=playwright.mobile.config.ts",
+    "test:e2e:release": "npm run test:e2e && npm run test:e2e:mobile-matrix",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
     "test:seo": "node scripts/check-seo.mjs",

@@ -13,7 +13,8 @@ const isBugReportOpen = ref(false);
     >
       <NuxtLink
         to="/"
-        class="shrink-0 text-sm font-semibold uppercase tracking-[0.18em] text-white"
+        class="inline-flex min-h-10 min-w-10 shrink-0 items-center text-sm font-semibold uppercase tracking-[0.18em] text-white sm:min-w-0"
+        aria-label="Film Together — на главную"
         ><span class="sm:hidden">F<span class="text-amber-300">T</span></span
         ><span class="hidden sm:inline"
           >Film <span class="text-amber-300">Together</span></span
@@ -46,21 +47,24 @@ const isBugReportOpen = ref(false);
         <NuxtLink
           v-if="userStore.profile?.roles.includes('admin')"
           to="/admin"
-          class="text-amber-300 hover:text-amber-200"
+          class="inline-flex min-h-10 min-w-10 items-center justify-center text-amber-300 hover:text-amber-200 sm:min-w-0 sm:px-1"
           aria-label="Админка"
           ><span class="sm:hidden">A</span
           ><span class="hidden sm:inline">Админка</span></NuxtLink
         >
         <button
           v-if="userStore.profile?.token_id"
-          class="min-h-10 px-1 text-zinc-400 hover:text-white"
+          class="grid min-h-10 min-w-10 place-items-center px-1 text-zinc-400 hover:text-white sm:block sm:min-w-0"
           aria-label="Выйти"
           @click="authStore.logout"
         >
           <span class="sm:hidden" aria-hidden="true">↗</span
           ><span class="hidden sm:inline">Выйти</span>
         </button>
-        <NuxtLink v-else to="/sign-in" class="text-zinc-400 hover:text-white"
+        <NuxtLink
+          v-else
+          to="/sign-in"
+          class="inline-flex min-h-10 items-center px-2 text-zinc-400 hover:text-white sm:px-1"
           >Аккаунт</NuxtLink
         >
       </div>

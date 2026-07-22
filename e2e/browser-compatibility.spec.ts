@@ -6,6 +6,10 @@ const publicRoutes = [
   '/for-friends',
   '/for-groups',
   '/sign-in',
+  '/signup',
+  '/legal/privacy',
+  '/legal/cookies',
+  '/legal/terms',
 ];
 
 const collectRuntimeErrors = (page: Page) => {
@@ -127,5 +131,69 @@ test.describe('cross-browser public smoke', () => {
         name: 'Выберите фильм вместе без споров.',
       }),
     ).toBeVisible();
+  });
+
+  test('unknown and missing share routes use the branded 404', async ({
+    page,
+  }) => {
+    await page.goto('/route-that-does-not-exist');
+
+    await expect(
+      page.getByRole('heading', { name: 'Страница не найдена' }),
+    ).toBeVisible();
+    await expect(page.getByText('Ошибка 404')).toBeVisible();
+    await expect(page).toHaveTitle('Страница не найдена · Film Together');
+    await expect(page.locator('body')).toHaveCSS(
+      'background-color',
+      'rgb(11, 13, 18)',
+    );
+
+    await page.getByRole('link', { name: 'На главную', exact: true }).click();
+    await expect(page).toHaveURL('/');
+
+    await page.route('**/film?**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        json: { items: [] },
+      }),
+    );
+    await page.goto('/share/000000000000000000000000');
+
+    await expect(
+      page.getByRole('heading', { name: 'Страница не найдена' }),
+    ).toBeVisible();
+    await expect(page.getByText('Ошибка 404')).toBeVisible();
+  });
+
+  test('mobile navigation targets are at least 40 pixels high', async ({
+    page,
+  }, testInfo) => {
+    test.skip(!testInfo.project.name.startsWith('mobile-'));
+    await page.goto('/', { waitUntil: 'networkidle' });
+
+    const targets = [
+      page.getByRole('link', {
+        name: 'Film Together — на главную',
+        exact: true,
+      }),
+      page.getByRole('button', { name: 'Сообщить об ошибке' }),
+      page.getByRole('link', { name: 'Аккаунт', exact: true }),
+      page.getByRole('link', { name: 'Для двоих', exact: true }),
+      page.getByRole('link', { name: 'С друзьями', exact: true }),
+      page.getByRole('link', { name: 'Для компании', exact: true }),
+      page.getByRole('link', { name: 'Обработка данных', exact: true }),
+      page.getByRole('link', { name: 'Файлы cookie', exact: true }),
+      page.getByRole('link', {
+        name: 'Пользовательское соглашение',
+        exact: true,
+      }),
+    ];
+
+    for (const target of targets) {
+      const box = await target.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.height).toBeGreaterThanOrEqual(40);
+    }
   });
 });

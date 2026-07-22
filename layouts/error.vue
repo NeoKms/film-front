@@ -1,9 +1,5 @@
-<script setup lang="ts"></script>
-
 <template>
-  <div class="h-screen items-center justify-center overlay">
+  <div class="min-h-dvh bg-[#0b0d12] text-zinc-100">
     <slot />
   </div>
 </template>
-
-<style scoped></style>

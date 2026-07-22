@@ -9,10 +9,14 @@ const submitting = ref(false);
 const submitted = ref(false);
 const hydrated = ref(false);
 
-const options: Array<{ value: FeedbackRating; label: string; icon: string }> = [
-  { value: 'negative', label: 'Не очень', icon: '☹' },
-  { value: 'neutral', label: 'Нормально', icon: '•' },
-  { value: 'positive', label: 'Отлично', icon: '♥' },
+const options: Array<{
+  value: FeedbackRating;
+  label: string;
+  icon: string;
+}> = [
+  { value: 'negative', label: 'Не очень', icon: 'lucide:frown' },
+  { value: 'neutral', label: 'Нормально', icon: 'lucide:meh' },
+  { value: 'positive', label: 'Отлично', icon: 'lucide:heart' },
 ];
 
 onMounted(() => {
@@ -63,7 +67,7 @@ const submit = async () => {
           v-for="option in options"
           :key="option.value"
           type="button"
-          class="min-h-16 rounded-2xl border px-2 py-3 text-center text-sm transition"
+          class="flex min-h-16 flex-col items-center justify-center rounded-2xl border px-2 py-3 text-center text-sm transition"
           :class="
             rating === option.value
               ? 'border-amber-300/70 bg-amber-300/10 text-amber-200'
@@ -72,10 +76,12 @@ const submit = async () => {
           :aria-pressed="rating === option.value"
           @click="rating = option.value"
         >
-          <span class="block text-lg" aria-hidden="true">{{
-            option.icon
-          }}</span>
-          <span class="mt-1 block">{{ option.label }}</span>
+          <icon
+            :name="option.icon"
+            class="size-4 shrink-0"
+            aria-hidden="true"
+          />
+          <span class="mt-2 block leading-none">{{ option.label }}</span>
         </button>
       </div>
       <form v-if="rating" class="mt-4" @submit.prevent="submit">

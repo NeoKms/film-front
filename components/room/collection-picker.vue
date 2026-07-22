@@ -210,10 +210,10 @@ watch(selectedGroups, (current, previous) => {
         :key="section.category"
         class="rounded-2xl border border-white/[0.07] bg-black/10 p-2.5 md:border-0 md:bg-transparent md:p-0"
       >
-        <div class="flex min-h-9 items-center justify-between gap-3 md:mb-2.5">
+        <div class="flex min-h-10 items-center justify-between gap-3 md:mb-2.5">
           <button
             type="button"
-            class="flex min-w-0 flex-1 items-center gap-2 text-left md:pointer-events-none"
+            class="flex min-h-10 min-w-0 flex-1 items-center gap-2 text-left md:pointer-events-none"
             :class="hasMultipleSections ? '' : 'pointer-events-none'"
             :aria-expanded="isSectionOpen(section.category)"
             :aria-controls="`film-group-section-${section.category}`"
@@ -239,7 +239,7 @@ watch(selectedGroups, (current, previous) => {
             <button
               v-if="isSectionOpen(section.category) && section.items.length > 2"
               type="button"
-              class="min-h-8 rounded-lg px-2 text-[10px] text-zinc-400 transition hover:bg-white/5 hover:text-white md:hidden"
+              class="min-h-10 rounded-lg px-2 text-[10px] text-zinc-400 transition hover:bg-white/5 hover:text-white md:hidden"
               @click="toggleLayout(section.category)"
             >
               {{ expandedLayouts.has(section.category) ? 'В ленту' : 'Все' }}
@@ -287,7 +287,7 @@ watch(selectedGroups, (current, previous) => {
               <icon :name="`lucide:${group.icon}`" class="size-4" />
             </span>
             <span
-              class="pointer-events-none relative z-30 mt-2 flex w-full min-w-0 items-start gap-1"
+              class="pointer-events-none relative z-30 mt-1 flex w-full min-w-0 items-center gap-1"
             >
               <span
                 class="line-clamp-2 min-w-0 flex-1 text-[11px] font-medium leading-4"
@@ -300,32 +300,32 @@ watch(selectedGroups, (current, previous) => {
               <button
                 v-if="group.description && openDescriptionId !== group._id"
                 type="button"
-                class="pointer-events-auto -mr-1 grid size-5 shrink-0 place-items-center text-zinc-600 transition hover:text-zinc-200"
+                class="pointer-events-auto -mr-2 grid size-10 shrink-0 place-items-center rounded-xl text-zinc-600 transition hover:bg-white/5 hover:text-zinc-200"
                 :aria-label="`Описание подборки «${group.name}»`"
                 :aria-expanded="false"
                 :aria-controls="`film-group-description-${group._id}`"
                 @click="toggleDescription(group._id)"
               >
-                <icon name="lucide:info" class="size-3.5" />
+                <icon name="lucide:info" class="size-4" />
               </button>
             </span>
             <span
               v-if="group.description && openDescriptionId === group._id"
               :id="`film-group-description-${group._id}`"
-              class="pointer-events-none absolute inset-px z-30 flex items-center rounded-[calc(1rem-1px)] bg-zinc-950/90 p-2 pr-7 text-[10px] leading-3.5 text-zinc-300 backdrop-blur-sm"
+              class="pointer-events-none absolute inset-px z-30 flex items-center rounded-[calc(1rem-1px)] bg-zinc-950/90 p-2 pr-12 text-[10px] leading-3.5 text-zinc-300 backdrop-blur-sm"
             >
               <span class="line-clamp-5">{{ group.description }}</span>
             </span>
             <button
               v-if="group.description && openDescriptionId === group._id"
               type="button"
-              class="absolute right-2 top-2 z-40 grid size-5 place-items-center text-zinc-500 transition hover:text-white"
+              class="absolute right-1 top-1 z-40 grid size-10 place-items-center rounded-xl text-zinc-500 transition hover:bg-white/5 hover:text-white"
               :aria-label="`Скрыть описание подборки «${group.name}»`"
               :aria-expanded="true"
               :aria-controls="`film-group-description-${group._id}`"
               @click="toggleDescription(group._id)"
             >
-              <icon name="lucide:x" class="size-3.5" />
+              <icon name="lucide:x" class="size-4" />
             </button>
             <span
               v-if="selectedIds.has(group._id)"

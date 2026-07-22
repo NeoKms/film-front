@@ -203,14 +203,18 @@ const kickParticipant = async () => {
             class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-amber-300 font-semibold text-zinc-950"
             >{{ participant.name?.slice(0, 1).toUpperCase() }}</span
           >
-          <span class="truncate">{{ participant.name || 'Без имени' }}</span>
-          <span
-            v-if="participant._id === room.created_by._id"
-            class="ml-auto text-[10px] text-zinc-500"
-            >организатор</span
-          >
+          <span class="min-w-0 flex-1">
+            <span class="block truncate">{{
+              participant.name || 'Без имени'
+            }}</span>
+            <span
+              v-if="participant._id === room.created_by._id"
+              class="mt-0.5 block text-[10px] text-zinc-500"
+              >организатор</span
+            >
+          </span>
           <button
-            v-else-if="isOwner"
+            v-if="isOwner && participant._id !== room.created_by._id"
             type="button"
             class="ml-auto min-h-9 shrink-0 rounded-xl px-2.5 text-xs text-zinc-500 transition hover:bg-red-400/10 hover:text-red-300"
             :aria-label="`Удалить ${participant.name || 'участника'} из комнаты`"
@@ -309,7 +313,7 @@ const kickParticipant = async () => {
     </section>
 
     <aside
-      class="order-first min-w-0 rounded-3xl border border-amber-300/20 bg-amber-300/[0.06] p-5 lg:order-none sm:p-8"
+      class="order-first min-w-0 rounded-3xl border border-amber-300/20 bg-amber-300/[0.06] p-5 sm:p-8 lg:order-none lg:h-fit lg:self-start"
     >
       <p class="text-xs uppercase tracking-widest text-zinc-500">
         Код приглашения

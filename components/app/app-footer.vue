@@ -17,13 +17,19 @@
           class="hidden text-xs uppercase tracking-widest text-zinc-400 sm:block"
           >Сценарии</span
         >
-        <NuxtLink to="/for-couples" class="transition hover:text-white"
+        <NuxtLink
+          to="/for-couples"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >Для двоих</NuxtLink
         >
-        <NuxtLink to="/for-friends" class="transition hover:text-white"
+        <NuxtLink
+          to="/for-friends"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >С друзьями</NuxtLink
         >
-        <NuxtLink to="/for-groups" class="transition hover:text-white"
+        <NuxtLink
+          to="/for-groups"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >Для компании</NuxtLink
         >
       </nav>
@@ -35,13 +41,19 @@
           class="hidden text-xs uppercase tracking-widest text-zinc-400 sm:block"
           >Документы</span
         >
-        <NuxtLink to="/legal/privacy" class="transition hover:text-white"
+        <NuxtLink
+          to="/legal/privacy"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >Обработка данных</NuxtLink
         >
-        <NuxtLink to="/legal/cookies" class="transition hover:text-white"
+        <NuxtLink
+          to="/legal/cookies"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >Файлы cookie</NuxtLink
         >
-        <NuxtLink to="/legal/terms" class="transition hover:text-white"
+        <NuxtLink
+          to="/legal/terms"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >Пользовательское соглашение</NuxtLink
         >
       </nav>

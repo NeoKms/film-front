@@ -10,7 +10,7 @@ const { data: film } = await useAsyncData(
   () => filmStore.getById(String(route.params.id)),
 );
 if (!film.value)
-  throw createError({ statusCode: 404, statusMessage: 'Film not found' });
+  throw createError({ statusCode: 404, message: 'Фильм не найден' });
 
 const pageOrigin = String(config.public.siteUrl).replace(/\/$/, '');
 const canonicalOrigin = String(

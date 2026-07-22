@@ -182,7 +182,7 @@ const shareFinalFilm = async () => {
         Фильм выбран
       </h1>
       <div
-        class="mx-auto mt-8 grid max-w-xl gap-5 rounded-[2rem] border border-amber-300/30 bg-amber-300/[0.07] p-5 text-left sm:grid-cols-[9rem_1fr] sm:items-center"
+        class="mx-auto mt-8 grid max-w-xl gap-5 rounded-[2rem] border border-amber-300/30 bg-amber-300/[0.07] p-5 text-center sm:grid-cols-[9rem_1fr] sm:items-center sm:text-left"
       >
         <film-poster
           :src="room.final_film.poster_url"
@@ -270,10 +270,14 @@ const shareFinalFilm = async () => {
 
   <section
     v-else
-    class="mx-auto grid max-w-5xl gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-6"
+    class="mx-auto grid h-[calc(100svh-7rem)] max-w-5xl grid-rows-[auto_minmax(0,1fr)] gap-4 lg:h-auto lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-6"
   >
-    <div class="order-2 mx-auto w-full max-w-[29rem] lg:order-1">
-      <div class="relative h-[min(65svh,42rem)] min-h-[24rem]">
+    <div
+      class="order-2 mx-auto flex min-h-0 w-full max-w-[29rem] flex-col lg:order-1"
+    >
+      <div
+        class="relative min-h-[24rem] flex-1 lg:h-[min(70svh,44rem)] lg:flex-none"
+      >
         <div
           v-if="nextFilm"
           class="absolute inset-x-3 inset-y-2 overflow-hidden rounded-[1.75rem] opacity-50"
