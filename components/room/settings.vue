@@ -859,7 +859,7 @@ const resetFilters = () => {
       </aside>
 
       <div
-        class="sticky -bottom-5 z-20 -mx-5 -mb-5 border-t border-white/10 bg-[#151820] px-5 pb-5 pt-4 sm:-bottom-7 sm:-mx-7 sm:-mb-7 sm:px-7 sm:pb-7 lg:col-span-2"
+        class="sticky -bottom-5 z-20 -mx-5 -mb-5 border-t border-white/10 bg-[#151820] px-5 pb-5 pt-4 after:pointer-events-none after:absolute after:inset-x-0 after:-bottom-px after:h-px after:bg-[#151820] sm:-bottom-7 sm:-mx-7 sm:-mb-7 sm:px-7 sm:pb-7 lg:col-span-2"
       >
         <p
           v-if="totalFilmsStatus === 'error'"

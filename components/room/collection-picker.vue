@@ -23,6 +23,7 @@ const search = ref('');
 const openCategory = ref<FilmGroupCategory | null>(null);
 const expandedLayouts = ref<Set<FilmGroupCategory>>(new Set());
 const selectedExpanded = ref(false);
+const openDescriptionId = ref<string | null>(null);
 const selectedPreviewLimit = 4;
 const sections = computed(() =>
   getFilmGroupSections(props.groups, search.value),
@@ -51,10 +52,15 @@ const hiddenSelectedCount = computed(() =>
 );
 
 const toggleGroup = (group: FilmGroupItem) => {
+  openDescriptionId.value = null;
   emit(
     'update:selected-options',
     toggleFilmGroupSelection(props.selectedOptions, group),
   );
+};
+
+const toggleDescription = (id: string) => {
+  openDescriptionId.value = openDescriptionId.value === id ? null : id;
 };
 
 const removeGroup = (id: string) => {
@@ -254,50 +260,81 @@ watch(selectedGroups, (current, previous) => {
                 : 'flex snap-x snap-mandatory overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
           "
         >
-          <button
+          <div
             v-for="group in section.items"
             :key="group._id"
-            type="button"
-            class="relative min-h-32 snap-start rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:border-white/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 md:w-auto md:shrink"
+            class="group relative isolate flex min-h-24 snap-start flex-col items-start justify-start rounded-2xl border p-2.5 text-left transition hover:-translate-y-0.5 hover:border-white/25 md:w-auto md:shrink"
             :class="[
               expandedLayouts.has(section.category)
                 ? 'w-auto min-w-0'
-                : 'w-48 shrink-0',
+                : 'w-40 shrink-0',
               selectedIds.has(group._id)
                 ? filmGroupAccentStyles[group.accent].card
                 : 'border-white/10 bg-white/[0.025]',
             ]"
-            :aria-pressed="selectedIds.has(group._id)"
-            @click="toggleGroup(group)"
           >
+            <button
+              type="button"
+              class="absolute inset-0 z-0 rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+              :aria-label="`Выбрать подборку «${group.name}»`"
+              :aria-pressed="selectedIds.has(group._id)"
+              @click="toggleGroup(group)"
+            />
             <span
-              class="grid size-9 place-items-center rounded-xl"
+              class="pointer-events-none relative z-10 grid size-8 place-items-center rounded-lg"
               :class="filmGroupAccentStyles[group.accent].icon"
             >
-              <icon :name="`lucide:${group.icon}`" class="size-[1.125rem]" />
+              <icon :name="`lucide:${group.icon}`" class="size-4" />
             </span>
             <span
-              class="mt-2.5 block line-clamp-2 text-xs font-medium leading-4"
-              :class="
-                selectedIds.has(group._id) ? 'text-white' : 'text-zinc-300'
-              "
+              class="pointer-events-none relative z-30 mt-2 flex w-full min-w-0 items-start gap-1"
             >
-              {{ group.name }}
+              <span
+                class="line-clamp-2 min-w-0 flex-1 text-[11px] font-medium leading-4"
+                :class="
+                  selectedIds.has(group._id) ? 'text-white' : 'text-zinc-300'
+                "
+              >
+                {{ group.name }}
+              </span>
+              <button
+                v-if="group.description && openDescriptionId !== group._id"
+                type="button"
+                class="pointer-events-auto -mr-1 grid size-5 shrink-0 place-items-center text-zinc-600 transition hover:text-zinc-200"
+                :aria-label="`Описание подборки «${group.name}»`"
+                :aria-expanded="false"
+                :aria-controls="`film-group-description-${group._id}`"
+                @click="toggleDescription(group._id)"
+              >
+                <icon name="lucide:info" class="size-3.5" />
+              </button>
             </span>
             <span
-              v-if="group.description"
-              class="mt-1.5 block line-clamp-2 text-[10px] leading-4 text-zinc-500"
+              v-if="group.description && openDescriptionId === group._id"
+              :id="`film-group-description-${group._id}`"
+              class="pointer-events-none absolute inset-px z-30 flex items-center rounded-[calc(1rem-1px)] bg-zinc-950/90 p-2 pr-7 text-[10px] leading-3.5 text-zinc-300 backdrop-blur-sm"
             >
-              {{ group.description }}
+              <span class="line-clamp-5">{{ group.description }}</span>
             </span>
+            <button
+              v-if="group.description && openDescriptionId === group._id"
+              type="button"
+              class="absolute right-2 top-2 z-40 grid size-5 place-items-center text-zinc-500 transition hover:text-white"
+              :aria-label="`Скрыть описание подборки «${group.name}»`"
+              :aria-expanded="true"
+              :aria-controls="`film-group-description-${group._id}`"
+              @click="toggleDescription(group._id)"
+            >
+              <icon name="lucide:x" class="size-3.5" />
+            </button>
             <span
               v-if="selectedIds.has(group._id)"
-              class="absolute right-2.5 top-2.5 grid size-5 place-items-center rounded-full"
+              class="pointer-events-none absolute right-2 top-2 z-10 grid size-5 place-items-center rounded-full"
               :class="filmGroupAccentStyles[group.accent].check"
             >
               <icon name="lucide:check" class="size-3" />
             </span>
-          </button>
+          </div>
         </div>
       </section>
     </div>
