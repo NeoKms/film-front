@@ -18,6 +18,17 @@ import {
   resolveAdminReferenceNames,
   type AdminReferenceOption,
 } from '~/utils/admin-references';
+import {
+  filmGroupAccents,
+  filmGroupAccentStyles,
+  filmGroupCategories,
+  filmGroupCategoryLabels,
+  filmGroupIcons,
+  normalizeFilmGroup,
+  type FilmGroupAccent,
+  type FilmGroupCategory,
+  type FilmGroupIcon,
+} from '~/utils/film-groups';
 
 definePageMeta({ middleware: 'admin' });
 
@@ -50,6 +61,9 @@ type AdminFilm = {
   tags?: string[];
   persons?: unknown[];
   groups?: string[];
+  category?: FilmGroupCategory;
+  icon?: FilmGroupIcon;
+  accent?: FilmGroupAccent;
   created_at?: string;
 };
 type AdminReference = AdminReferenceOption;
@@ -129,6 +143,7 @@ const selectedFeedback = ref<AdminFeedback | null>(null);
 const feedbackLimit = 30;
 const selected = ref<AdminFilm | null>(null);
 const selectedOriginal = ref<AdminFilm | null>(null);
+const creatingReference = ref(false);
 const filmDetails = ref<AdminFilm | null>(null);
 const isFilmModalOpen = ref(false);
 const filmModalMode = ref<'details' | 'edit'>('details');
@@ -224,6 +239,28 @@ const feedbackRatingLabels: Record<FeedbackRating, string> = {
   neutral: 'Нормально',
   positive: 'Отлично',
 };
+const presentFilmGroup = (film: AdminFilm) =>
+  normalizeFilmGroup({
+    _id: film._id,
+    name: film.name || '',
+    name_en: film.name_en,
+    description: film.description,
+    category: film.category,
+    icon: film.icon,
+    accent: film.accent,
+  });
+const selectedFilmGroupPreview = computed(() => {
+  if (section.value !== 'groups' || !selected.value) return null;
+  return normalizeFilmGroup({
+    _id: selected.value._id,
+    name: selected.value.name || 'Название подборки',
+    name_en: selected.value.name_en,
+    description: selected.value.description,
+    category: selected.value.category,
+    icon: selected.value.icon,
+    accent: selected.value.accent,
+  });
+});
 
 const formatFeedbackDate = (value: string) =>
   new Intl.DateTimeFormat('ru-RU', {
@@ -680,9 +717,28 @@ async function handleSwipeDecision(
 }
 
 function beginEdit(film: AdminFilm) {
+  const presentation =
+    section.value === 'groups'
+      ? normalizeFilmGroup({
+          _id: film._id,
+          name: film.name || '',
+          name_en: film.name_en,
+          description: film.description,
+          category: film.category,
+          icon: film.icon,
+          accent: film.accent,
+        })
+      : null;
   const copy = JSON.parse(
     JSON.stringify({
       ...film,
+      ...(presentation
+        ? {
+            category: presentation.category,
+            icon: presentation.icon,
+            accent: presentation.accent,
+          }
+        : {}),
       countries: film.countries ?? [],
       tags: film.tags ?? [],
       groups: film.groups ?? [],
@@ -690,12 +746,32 @@ function beginEdit(film: AdminFilm) {
   ) as AdminFilm;
   selected.value = copy;
   selectedOriginal.value = JSON.parse(JSON.stringify(copy)) as AdminFilm;
+  creatingReference.value = false;
   if (section.value === 'films') filmModalMode.value = 'edit';
 }
 
 async function save() {
   if (!selected.value) return;
   const resource = section.value === 'films' ? 'films' : section.value;
+  if (creatingReference.value && section.value === 'groups') {
+    await wrappedFetch('/admin/groups', {
+      method: 'POST',
+      body: {
+        name: selected.value.name,
+        name_en: selected.value.name_en || undefined,
+        description: selected.value.description || undefined,
+        category: selected.value.category,
+        icon: selected.value.icon,
+        accent: selected.value.accent,
+        verified: selected.value.verified,
+      },
+    });
+    selected.value = null;
+    selectedOriginal.value = null;
+    creatingReference.value = false;
+    await refresh();
+    return;
+  }
   const body =
     section.value === 'films'
       ? Object.fromEntries(
@@ -726,6 +802,7 @@ async function save() {
   }
   selected.value = null;
   selectedOriginal.value = null;
+  creatingReference.value = false;
   if (section.value !== 'films') await refresh();
 }
 
@@ -753,6 +830,22 @@ async function remove(item: Pick<AdminFilm, '_id' | 'name'>) {
 }
 
 async function createReference() {
+  if (section.value === 'groups') {
+    selected.value = {
+      _id: '',
+      name: '',
+      name_en: '',
+      description: '',
+      verified: false,
+      deleted: false,
+      category: 'other',
+      icon: 'layers-3',
+      accent: 'amber',
+    };
+    selectedOriginal.value = null;
+    creatingReference.value = true;
+    return;
+  }
   const name = prompt('Название новой записи');
   if (!name || section.value === 'dashboard' || section.value === 'films')
     return;
@@ -1107,6 +1200,93 @@ onBeforeUnmount(() =>
                 v-model="selected.name_en"
                 class="mt-1 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-white"
             /></label>
+            <template v-if="section === 'groups' && selectedFilmGroupPreview">
+              <label class="block text-sm text-zinc-300">
+                Описание
+                <textarea
+                  v-model="selected.description"
+                  rows="3"
+                  class="admin-input"
+                  placeholder="Коротко объясните, какие фильмы входят в подборку"
+                />
+              </label>
+              <div class="grid gap-4 sm:grid-cols-3">
+                <label class="block text-sm text-zinc-300">
+                  Категория
+                  <select v-model="selected.category" class="admin-input">
+                    <option
+                      v-for="category in filmGroupCategories"
+                      :key="category"
+                      :value="category"
+                    >
+                      {{ filmGroupCategoryLabels[category] }}
+                    </option>
+                  </select>
+                </label>
+                <label class="block text-sm text-zinc-300">
+                  Иконка
+                  <select v-model="selected.icon" class="admin-input">
+                    <option
+                      v-for="iconName in filmGroupIcons"
+                      :key="iconName"
+                      :value="iconName"
+                    >
+                      {{ iconName }}
+                    </option>
+                  </select>
+                </label>
+                <label class="block text-sm text-zinc-300">
+                  Цвет
+                  <select v-model="selected.accent" class="admin-input">
+                    <option
+                      v-for="accentName in filmGroupAccents"
+                      :key="accentName"
+                      :value="accentName"
+                    >
+                      {{ accentName }}
+                    </option>
+                  </select>
+                </label>
+              </div>
+              <div>
+                <p class="mb-2 text-xs uppercase tracking-wider text-zinc-500">
+                  Предпросмотр
+                </p>
+                <div
+                  class="max-w-xs rounded-2xl border p-4"
+                  :class="
+                    filmGroupAccentStyles[selectedFilmGroupPreview.accent].card
+                  "
+                >
+                  <span
+                    class="grid size-10 place-items-center rounded-xl"
+                    :class="
+                      filmGroupAccentStyles[selectedFilmGroupPreview.accent]
+                        .icon
+                    "
+                  >
+                    <icon
+                      :name="`lucide:${selectedFilmGroupPreview.icon}`"
+                      class="size-5"
+                    />
+                  </span>
+                  <p class="mt-3 text-sm font-medium text-white">
+                    {{ selectedFilmGroupPreview.name }}
+                  </p>
+                  <p
+                    v-if="selectedFilmGroupPreview.description"
+                    class="mt-1 text-xs leading-4 text-zinc-300"
+                  >
+                    {{ selectedFilmGroupPreview.description }}
+                  </p>
+                  <p class="mt-1 text-xs text-zinc-400">
+                    {{
+                      filmGroupCategoryLabels[selectedFilmGroupPreview.category]
+                    }}
+                  </p>
+                </div>
+              </div>
+            </template>
             <template v-if="section === 'films'">
               <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <label class="block text-sm text-zinc-300"
@@ -1233,6 +1413,7 @@ onBeforeUnmount(() =>
             <div class="flex gap-2">
               <button
                 class="rounded-xl bg-amber-300 px-4 py-2 text-sm font-semibold text-zinc-950"
+                :disabled="!selected.name?.trim()"
                 @click="save"
               >
                 Сохранить</button
@@ -1241,6 +1422,7 @@ onBeforeUnmount(() =>
                 @click="
                   selected = null;
                   selectedOriginal = null;
+                  creatingReference = false;
                 "
               >
                 Отмена
@@ -1586,12 +1768,37 @@ onBeforeUnmount(() =>
                   class="h-16 border-b border-white/5 last:border-0"
                 >
                   <td class="p-3">
-                    <p class="truncate font-medium text-white">
-                      {{ item.name }}
-                    </p>
-                    <p class="truncate text-xs text-zinc-500">
-                      {{ item.name_en }}
-                    </p>
+                    <div class="flex min-w-0 items-center gap-3">
+                      <span
+                        v-if="section === 'groups'"
+                        class="grid size-9 shrink-0 place-items-center rounded-xl"
+                        :class="
+                          filmGroupAccentStyles[presentFilmGroup(item).accent]
+                            .icon
+                        "
+                      >
+                        <icon
+                          :name="`lucide:${presentFilmGroup(item).icon}`"
+                          class="size-4"
+                        />
+                      </span>
+                      <div class="min-w-0">
+                        <p class="truncate font-medium text-white">
+                          {{ item.name }}
+                        </p>
+                        <p class="truncate text-xs text-zinc-500">
+                          {{ item.name_en }}
+                          <template v-if="section === 'groups'">
+                            ·
+                            {{
+                              filmGroupCategoryLabels[
+                                presentFilmGroup(item).category
+                              ]
+                            }}
+                          </template>
+                        </p>
+                      </div>
+                    </div>
                   </td>
                   <td class="p-3">
                     <span

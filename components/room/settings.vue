@@ -199,25 +199,6 @@ const promisesLoadEntities: Promise<unknown>[] = [];
 const selectedGroupIds =
   props.filters.groups ??
   (props.filters.group_id ? [props.filters.group_id] : undefined);
-if (selectedGroupIds?.length) {
-  promisesLoadEntities.push(
-    useAsyncData('selectedFilmGroups', async () =>
-      filmGroupStore.getList({
-        limit: selectedGroupIds.length,
-        offset: 0,
-        ids: selectedGroupIds,
-      }),
-    ).then(({ data }) => {
-      if (data.value) {
-        localFilters.groups = data.value.map((el) => ({
-          label: el.name,
-          value: el._id,
-        }));
-        filmGroupStore.groups = [];
-      }
-    }),
-  );
-}
 const selectedTagIds = props.filters.tags ?? props.filters.exclude_tags;
 if (selectedTagIds?.length) {
   promisesLoadEntities.push(
@@ -282,12 +263,6 @@ if (selectedActorIds?.length) {
 /** end **/
 await Promise.all(promisesLoadEntities);
 /** load filter */
-const groupFilter = reactive<FilmGroupFilter>({
-  limit: 20,
-  offset: 0,
-  search: '',
-  sort: 'name:asc',
-});
 const tagFilter = reactive<TagFilter>({
   limit: 20,
   offset: 0,
@@ -314,18 +289,12 @@ const personFilter = reactive<PersonFilter>({
 });
 
 const [
-  { status: groupsApiStatus },
+  { data: filmGroupsData, status: groupsApiStatus },
   { status: tagApiStatus },
   { status: countriesApiStatus },
   { status: personsApiStatus },
 ] = await Promise.all([
-  useAsyncData(
-    'filmGroupsFilter',
-    async () => filmGroupStore.getList(groupFilter),
-    {
-      watch: [groupFilter],
-    },
-  ),
+  useAsyncData('filmGroupsCatalog', async () => filmGroupStore.getAll()),
   useAsyncData('tagsFilter', async () => tagStore.getList(tagFilter), {
     watch: [tagFilter],
   }),
@@ -341,18 +310,12 @@ const [
   }),
 ]);
 
-const handleSearchGroups = (data: string) => {
-  filmGroupStore.groups = [];
-  groupFilter.search = data;
-  groupFilter.offset = 0;
-};
-const handleLoadMoreGroups = () => {
-  if (groupsApiStatus.value !== 'success') return;
-  const offset = groupFilter.offset + groupFilter.limit;
-  if (offset < (filmGroupStore.groupMeta?.total ?? 0)) {
-    groupFilter.offset += groupFilter.limit;
-  }
-};
+if (selectedGroupIds?.length) {
+  const selectedIds = new Set(selectedGroupIds.map(String));
+  localFilters.groups = (filmGroupsData.value ?? [])
+    .filter(({ _id }) => selectedIds.has(_id))
+    .map(({ _id, name }) => ({ value: _id, label: name }));
+}
 
 const handleSearchTags = (data: string) => {
   tagStore.tags = [];
@@ -530,7 +493,7 @@ const resetFilters = () => {
         <div
           v-if="filterMode === 'collections'"
           data-testid="room-collections-panel"
-          class="relative rounded-3xl border border-amber-300/25 bg-gradient-to-br from-amber-300/[0.1] via-amber-300/[0.04] to-transparent p-5"
+          class="relative overflow-hidden rounded-3xl border border-amber-300/25 bg-gradient-to-br from-amber-300/[0.1] via-amber-300/[0.04] to-transparent p-5"
         >
           <div
             class="pointer-events-none absolute -right-12 -top-16 size-40 rounded-full bg-amber-300/10 blur-3xl"
@@ -548,24 +511,13 @@ const resetFilters = () => {
               Можно отметить несколько подборок — фильмы объединятся в одну
               колоду без дополнительных ограничений.
             </p>
-            <div class="mt-4">
-              <design-system-multiselect
-                v-model:selected-options="localFilters.groups"
-                aria-label="Выбрать подборки"
-                :is-api="true"
-                :search-enabled="true"
-                :options="
-                  filmGroupStore.groups.map((item) => ({
-                    value: item._id,
-                    label: item.name,
-                  }))
-                "
-                :status="groupsApiStatus"
-                dropdown-mode="inline"
-                @search="handleSearchGroups"
-                @load-more="handleLoadMoreGroups"
-              />
-            </div>
+            <room-collection-picker
+              v-model:selected-options="localFilters.groups"
+              class="mt-5"
+              :groups="filmGroupStore.groups"
+              :loading="groupsApiStatus === 'pending'"
+              :error="groupsApiStatus === 'error'"
+            />
           </div>
         </div>
 
@@ -828,7 +780,7 @@ const resetFilters = () => {
 
       <aside
         data-testid="room-order-section"
-        class="min-w-0 lg:sticky lg:top-0 lg:self-start"
+        class="min-w-0 lg:sticky lg:top-[5.25rem] lg:self-start"
       >
         <section
           class="rounded-3xl border border-white/10 bg-black/15 p-4 sm:p-5"
@@ -907,7 +859,7 @@ const resetFilters = () => {
       </aside>
 
       <div
-        class="sticky -bottom-5 z-10 -mx-1 border-t border-white/10 bg-[#151820]/95 px-1 pb-1 pt-4 backdrop-blur lg:col-span-2"
+        class="sticky -bottom-5 z-20 -mx-5 -mb-5 border-t border-white/10 bg-[#151820] px-5 pb-5 pt-4 sm:-bottom-7 sm:-mx-7 sm:-mb-7 sm:px-7 sm:pb-7 lg:col-span-2"
       >
         <p
           v-if="totalFilmsStatus === 'error'"

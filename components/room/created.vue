@@ -4,11 +4,16 @@ import type { IFilmFilter } from '~/stores/film';
 import { ERoomFilmOrder } from '~/types';
 import type { RoomParticipant } from '~/stores/room';
 import { MIN_FILM_YEAR } from '~/utils/helpers';
+import {
+  filmGroupAccentStyles,
+  summarizeFilmGroups,
+} from '~/utils/film-groups';
 
 const roomStore = useRoomStore();
 const notificationStore = useNotificationStore();
 const userStore = useUserStore();
 const filmStore = useFilmStore();
+const filmGroupStore = useFilmGroupStore();
 const { track } = useProductAnalytics();
 const room = computed(() => roomStore.openedRoom!);
 const showQR = ref(false);
@@ -31,6 +36,7 @@ const filters = computed(() => room.value.film_filter);
 const filterSummary = computed(() => {
   const result: string[] = [];
   const value = room.value.film_filter;
+  if (value.groups?.length || value.group_id) return result;
   if (value.tags?.length) result.push(`${value.tags.length} жанр.`);
   if (value.exclude_tags?.length)
     result.push(`Без ${value.exclude_tags.length} жанр.`);
@@ -60,6 +66,19 @@ const orderLabels: Record<ERoomFilmOrder, string> = {
 };
 const orderSummary = computed(
   () => orderLabels[room.value.film_filter.order ?? ERoomFilmOrder.random],
+);
+const selectedGroupIds = computed(
+  () =>
+    room.value.film_filter.groups ??
+    (room.value.film_filter.group_id ? [room.value.film_filter.group_id] : []),
+);
+const { data: selectedFilmGroups } = await useAsyncData(
+  `room-groups-${room.value._id}`,
+  () => filmGroupStore.getByIds(selectedGroupIds.value),
+  { watch: [selectedGroupIds] },
+);
+const filmGroupSummary = computed(() =>
+  summarizeFilmGroups(selectedFilmGroups.value ?? []),
 );
 
 const {
@@ -123,7 +142,11 @@ const saveFilters = async (filmFilter: IFilmFilter) => {
     await roomStore.updateFilters(room.value._id, filmFilter);
     showSettings.value = false;
     await refresh();
-    track('filters_saved');
+    const collectionCount = filmFilter.groups?.length ?? 0;
+    track('filters_saved', {
+      filter_mode: collectionCount ? 'collections' : 'custom',
+      collection_count: collectionCount,
+    });
   } finally {
     settingsSaving.value = false;
   }
@@ -230,6 +253,21 @@ const kickParticipant = async () => {
             class="rounded-full bg-amber-300/10 px-3 py-1.5 text-xs text-amber-200"
             >{{ orderSummary }}</span
           >
+          <span
+            v-for="group in filmGroupSummary.visible"
+            :key="group._id"
+            class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs"
+            :class="filmGroupAccentStyles[group.accent].chip"
+          >
+            <icon :name="`lucide:${group.icon}`" class="size-3.5 shrink-0" />
+            {{ group.name }}
+          </span>
+          <span
+            v-if="filmGroupSummary.hiddenCount"
+            class="rounded-full bg-white/5 px-3 py-1.5 text-xs text-zinc-400"
+          >
+            ещё {{ filmGroupSummary.hiddenCount }}
+          </span>
           <span
             v-for="item in filterSummary"
             :key="item"

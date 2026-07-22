@@ -1,5 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from '@tailwindcss/vite';
+import { filmGroupIcons } from './utils/film-groups';
 
 export default defineNuxtConfig({
   compatibilityDate: '2024-11-01',
@@ -20,6 +21,13 @@ export default defineNuxtConfig({
     '@nuxt/icon',
     '@nuxt/eslint',
   ],
+
+  icon: {
+    clientBundle: {
+      scan: true,
+      icons: filmGroupIcons.map((name) => `lucide:${name}`),
+    },
+  },
 
   routeRules: {
     '/**': {

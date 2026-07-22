@@ -25,6 +25,8 @@ export interface ProductGoalParams {
   source?: 'hero' | 'middle' | 'result' | 'final';
   item?: number;
   depth?: 25 | 50 | 75 | 100;
+  filter_mode?: 'collections' | 'custom';
+  collection_count?: number;
 }
 
 declare global {
