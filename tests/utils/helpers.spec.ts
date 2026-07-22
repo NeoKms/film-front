@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import {
   isMissingImageUrl,
   mapSettingsToFilmFilter,
+  MIN_FILM_YEAR,
   normalizeRoomCode,
   toQueryParams,
 } from '../../utils/helpers';
@@ -20,7 +21,7 @@ const createSettings = (
   actors: [],
   actorsMode: 'include',
   rating: [1, 10],
-  year: [1960, new Date().getFullYear()],
+  year: [MIN_FILM_YEAR, new Date().getFullYear()],
   ageRatings: [],
   mpaaRatings: [],
   ...overrides,
@@ -117,6 +118,11 @@ describe('mapSettingsToFilmFilter', () => {
   test('omits default ranges and maps changed limits and ratings', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-19T12:00:00.000Z'));
+
+    expect(mapSettingsToFilmFilter(createSettings())).toMatchObject({
+      year_from: undefined,
+      year_to: undefined,
+    });
 
     expect(
       mapSettingsToFilmFilter(

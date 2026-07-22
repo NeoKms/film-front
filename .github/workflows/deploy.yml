@@ -101,8 +101,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium firefox webkit
+
       - name: Run contract and unit tests
         run: npm test
+
+      - name: Run cross-browser smoke tests
+        run: npm run test:e2e
 
       - name: Check types
         run: npm run typecheck
@@ -115,6 +121,14 @@ jobs:
 
       - name: Check production SEO responses
         run: npm run test:seo
+
+      - name: Upload browser test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
 
   build-and-push:
     name: Build & Push Docker image

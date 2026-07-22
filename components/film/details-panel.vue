@@ -85,7 +85,7 @@ const trailerEmbedUrl = computed(() => {
           :alt="film.name"
           class="mx-auto aspect-[2/3] w-36 rounded-2xl shadow-2xl shadow-black/50 sm:w-full"
         />
-        <div class="self-end">
+        <div class="self-start sm:pt-1">
           <div class="flex flex-wrap gap-2 text-xs">
             <span
               v-if="film.rating"
@@ -127,7 +127,7 @@ const trailerEmbedUrl = computed(() => {
       :class="{ 'lg:grid-cols-2': trailerEmbedUrl }"
     >
       <article
-        class="min-w-0 rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-5"
+        class="min-w-0 rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-5"
       >
         <p
           class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300"
@@ -142,7 +142,7 @@ const trailerEmbedUrl = computed(() => {
       </article>
       <article
         v-if="trailerEmbedUrl"
-        class="min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-zinc-900"
+        class="min-w-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-zinc-900"
       >
         <div class="px-5 py-4">
           <p
@@ -174,7 +174,7 @@ const trailerEmbedUrl = computed(() => {
 
     <section
       v-if="peopleGroups.length"
-      class="mt-5 min-w-0 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/[0.025] p-5"
+      class="mt-5 min-w-0 overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-5"
     >
       <p
         class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300"

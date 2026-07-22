@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { SelectOption } from '~/types';
+import type { FeedbackRating, FeedbackType, SelectOption } from '~/types';
 import type {
   AdminFilmStatus,
   ModerationAction,
@@ -28,7 +28,8 @@ type Section =
   | 'tags'
   | 'countries'
   | 'persons'
-  | 'positions';
+  | 'positions'
+  | 'feedback';
 type AdminFilm = {
   _id: string;
   name: string | null;
@@ -52,6 +53,20 @@ type AdminFilm = {
   created_at?: string;
 };
 type AdminReference = AdminReferenceOption;
+type AdminFeedback = {
+  _id: string;
+  type: FeedbackType;
+  rating?: FeedbackRating;
+  message?: string;
+  subject_id: string;
+  subject_type: 'user' | 'guest';
+  subject?: { _id: string; name?: string };
+  room_id?: string;
+  room?: { _id: string; code: string };
+  page_path: string;
+  user_agent?: string;
+  created_at: string;
+};
 type AdminDashboard = {
   totals: Record<
     | 'films'
@@ -105,6 +120,13 @@ const serverOffset = ref(0);
 const reachedEnd = ref(false);
 const loadSentinel = ref<HTMLElement | null>(null);
 const dashboard = ref<AdminDashboard | null>(null);
+const feedbackItems = ref<AdminFeedback[]>([]);
+const feedbackTotal = ref(0);
+const feedbackOffset = ref(0);
+const feedbackType = ref<FeedbackType | ''>('');
+const feedbackRating = ref<FeedbackRating | ''>('');
+const selectedFeedback = ref<AdminFeedback | null>(null);
+const feedbackLimit = 30;
 const selected = ref<AdminFilm | null>(null);
 const selectedOriginal = ref<AdminFilm | null>(null);
 const filmDetails = ref<AdminFilm | null>(null);
@@ -180,6 +202,7 @@ const labels: Record<Section, string> = {
   countries: 'Страны',
   persons: 'Персоны',
   positions: 'Профессии',
+  feedback: 'Обратная связь',
 };
 const sections: Section[] = [
   'dashboard',
@@ -189,7 +212,28 @@ const sections: Section[] = [
   'countries',
   'persons',
   'positions',
+  'feedback',
 ];
+
+const feedbackTypeLabels: Record<FeedbackType, string> = {
+  room_experience: 'После комнаты',
+  bug_report: 'Ошибка',
+};
+const feedbackRatingLabels: Record<FeedbackRating, string> = {
+  negative: 'Не очень',
+  neutral: 'Нормально',
+  positive: 'Отлично',
+};
+
+const formatFeedbackDate = (value: string) =>
+  new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+
+const feedbackAuthor = (item: AdminFeedback) =>
+  item.subject?.name ||
+  (item.subject_type === 'guest' ? 'Гость' : 'Пользователь');
 
 const loadFilmOptions = async () => {
   const loadReferences = (resource: 'groups' | 'tags' | 'countries') =>
@@ -395,6 +439,10 @@ async function refresh() {
       await loadFilms(true);
       return;
     }
+    if (section.value === 'feedback') {
+      await loadFeedback(true);
+      return;
+    }
     const params = new URLSearchParams();
     if (search.value) params.set('search', search.value);
     params.set('limit', '100');
@@ -425,11 +473,49 @@ async function select(next: Section) {
   ratingFrom.value = '';
   ratingTo.value = '';
   moderationMode.value = false;
+  feedbackType.value = '';
+  feedbackRating.value = '';
+  selectedFeedback.value = null;
   selected.value = null;
   selectedOriginal.value = null;
   closeFilmModal();
   await refresh();
 }
+
+async function loadFeedback(reset = false) {
+  if (isLoading.value && !reset) return;
+  if (reset) {
+    feedbackItems.value = [];
+    feedbackOffset.value = 0;
+    feedbackTotal.value = 0;
+  }
+  isLoading.value = true;
+  error.value = '';
+  try {
+    const params = new URLSearchParams({
+      limit: String(feedbackLimit),
+      offset: String(feedbackOffset.value),
+    });
+    if (feedbackType.value) params.set('type', feedbackType.value);
+    if (feedbackRating.value) params.set('rating', feedbackRating.value);
+    const response = await wrappedFetch<{
+      items: AdminFeedback[];
+      meta: { total: number };
+    }>(`/admin/feedback?${params}`);
+    const knownIds = new Set(feedbackItems.value.map(({ _id }) => _id));
+    feedbackItems.value.push(
+      ...response.items.filter(({ _id }) => !knownIds.has(_id)),
+    );
+    feedbackOffset.value += response.items.length;
+    feedbackTotal.value = response.meta.total;
+  } catch {
+    error.value = 'Не удалось загрузить обратную связь.';
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+const applyFeedbackFilters = () => loadFeedback(true);
 
 async function openFilm(film: AdminFilm, edit = false) {
   error.value = '';
@@ -911,6 +997,100 @@ onBeforeUnmount(() =>
               </div>
             </div>
           </section>
+        </template>
+
+        <template v-else-if="section === 'feedback'">
+          <div
+            class="mb-5 grid gap-3 sm:grid-cols-[minmax(0,13rem)_minmax(0,13rem)_auto]"
+          >
+            <select
+              v-model="feedbackType"
+              class="admin-filter-control"
+              aria-label="Тип обратной связи"
+              @change="applyFeedbackFilters"
+            >
+              <option value="">Все обращения</option>
+              <option value="room_experience">После комнаты</option>
+              <option value="bug_report">Ошибки</option>
+            </select>
+            <select
+              v-model="feedbackRating"
+              class="admin-filter-control"
+              aria-label="Оценка комнаты"
+              @change="applyFeedbackFilters"
+            >
+              <option value="">Любая оценка</option>
+              <option value="negative">Не очень</option>
+              <option value="neutral">Нормально</option>
+              <option value="positive">Отлично</option>
+            </select>
+            <span class="self-center text-sm text-zinc-500">
+              {{ feedbackTotal }} обращений
+            </span>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <button
+              v-for="item in feedbackItems"
+              :key="item._id"
+              type="button"
+              class="rounded-2xl border border-white/10 bg-zinc-950/80 p-4 text-left transition hover:border-white/20"
+              @click="selectedFeedback = item"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    class="rounded-full px-2.5 py-1 text-xs"
+                    :class="
+                      item.type === 'bug_report'
+                        ? 'bg-red-400/10 text-red-200'
+                        : 'bg-amber-300/10 text-amber-200'
+                    "
+                  >
+                    {{ feedbackTypeLabels[item.type] }}
+                  </span>
+                  <span
+                    v-if="item.rating"
+                    class="rounded-full bg-white/5 px-2.5 py-1 text-xs text-zinc-300"
+                  >
+                    {{ feedbackRatingLabels[item.rating] }}
+                  </span>
+                </div>
+                <time class="shrink-0 text-xs text-zinc-600">
+                  {{ formatFeedbackDate(item.created_at) }}
+                </time>
+              </div>
+              <p
+                class="mt-4 line-clamp-3 min-h-10 text-sm leading-5 text-zinc-300"
+              >
+                {{ item.message || 'Комментарий не оставлен.' }}
+              </p>
+              <div
+                class="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500"
+              >
+                <span>{{ feedbackAuthor(item) }}</span>
+                <span v-if="item.room">Комната {{ item.room.code }}</span>
+                <span v-else-if="item.room_id">Комната {{ item.room_id }}</span>
+              </div>
+            </button>
+          </div>
+          <p
+            v-if="!isLoading && !feedbackItems.length"
+            class="rounded-2xl border border-dashed border-white/10 p-8 text-center text-sm text-zinc-500"
+          >
+            По выбранным фильтрам обращений нет.
+          </p>
+          <div class="mt-5 text-center">
+            <p v-if="isLoading" class="text-sm text-zinc-500">Загрузка…</p>
+            <button
+              v-else-if="feedbackOffset < feedbackTotal"
+              type="button"
+              class="min-h-11 rounded-xl border border-white/15 px-5 text-sm text-white hover:bg-white/5"
+              @click="loadFeedback(false)"
+            >
+              Показать ещё
+            </button>
+          </div>
         </template>
 
         <template v-else-if="selected && !isFilmModalOpen">
@@ -1445,6 +1625,75 @@ onBeforeUnmount(() =>
         </template>
       </section>
     </div>
+    <design-system-modal
+      :is-open="Boolean(selectedFeedback)"
+      title="Обратная связь"
+      @update:is-open="
+        (open) => {
+          if (!open) selectedFeedback = null;
+        }
+      "
+    >
+      <article v-if="selectedFeedback" class="space-y-5">
+        <div class="flex flex-wrap gap-2">
+          <span class="rounded-full bg-white/5 px-3 py-1 text-sm text-zinc-300">
+            {{ feedbackTypeLabels[selectedFeedback.type] }}
+          </span>
+          <span
+            v-if="selectedFeedback.rating"
+            class="rounded-full bg-amber-300/10 px-3 py-1 text-sm text-amber-200"
+          >
+            {{ feedbackRatingLabels[selectedFeedback.rating] }}
+          </span>
+        </div>
+        <p class="whitespace-pre-wrap text-sm leading-6 text-zinc-200">
+          {{ selectedFeedback.message || 'Комментарий не оставлен.' }}
+        </p>
+        <dl
+          class="grid gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm sm:grid-cols-2"
+        >
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-zinc-600">Дата</dt>
+            <dd class="mt-1 text-zinc-300">
+              {{ formatFeedbackDate(selectedFeedback.created_at) }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-zinc-600">Автор</dt>
+            <dd class="mt-1 break-all text-zinc-300">
+              {{ feedbackAuthor(selectedFeedback) }} ·
+              {{ selectedFeedback.subject_type }} ·
+              {{ selectedFeedback.subject_id }}
+            </dd>
+          </div>
+          <div v-if="selectedFeedback.room_id">
+            <dt class="text-xs uppercase tracking-wide text-zinc-600">
+              Комната
+            </dt>
+            <dd class="mt-1 break-all text-zinc-300">
+              {{ selectedFeedback.room?.code || 'Код недоступен' }} ·
+              {{ selectedFeedback.room_id }}
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase tracking-wide text-zinc-600">
+              Страница
+            </dt>
+            <dd class="mt-1 break-all text-zinc-300">
+              {{ selectedFeedback.page_path }}
+            </dd>
+          </div>
+          <div class="sm:col-span-2">
+            <dt class="text-xs uppercase tracking-wide text-zinc-600">
+              User-Agent
+            </dt>
+            <dd class="mt-1 break-words text-zinc-300">
+              {{ selectedFeedback.user_agent || 'Не передан' }}
+            </dd>
+          </div>
+        </dl>
+      </article>
+    </design-system-modal>
     <design-system-modal
       v-model:is-open="isFilmModalOpen"
       size="wide"

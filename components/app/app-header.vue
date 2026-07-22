@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const authStore = useAuthStore();
 const userStore = useUserStore();
+const isBugReportOpen = ref(false);
 </script>
 
 <template>
@@ -19,6 +20,15 @@ const userStore = useUserStore();
         ></NuxtLink
       >
       <div class="flex items-center gap-2 text-sm sm:gap-4">
+        <button
+          type="button"
+          class="grid min-h-10 min-w-10 place-items-center rounded-xl text-zinc-500 transition hover:bg-white/5 hover:text-white sm:block sm:min-w-0 sm:px-1"
+          aria-label="Сообщить об ошибке"
+          @click="isBugReportOpen = true"
+        >
+          <span class="text-lg sm:hidden" aria-hidden="true">!</span>
+          <span class="hidden sm:inline">Сообщить об ошибке</span>
+        </button>
         <NuxtLink
           v-if="userStore.profile?.token_id"
           to="/profile"
@@ -55,5 +65,6 @@ const userStore = useUserStore();
         >
       </div>
     </div>
+    <feedback-bug-report-modal v-model:is-open="isBugReportOpen" />
   </header>
 </template>

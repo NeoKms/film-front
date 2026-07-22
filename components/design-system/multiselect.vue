@@ -9,8 +9,15 @@ const props = withDefaults(
     searchEnabled?: boolean;
     status?: 'error' | 'pending' | 'success' | 'idle';
     ariaLabel?: string;
+    dropdownMode?: 'overlay' | 'inline';
   }>(),
-  { isApi: false, searchEnabled: true, status: 'idle', ariaLabel: undefined },
+  {
+    isApi: false,
+    searchEnabled: true,
+    status: 'idle',
+    ariaLabel: undefined,
+    dropdownMode: 'overlay',
+  },
 );
 const emit = defineEmits<{
   'update:selectedOptions': [options: SelectOption[]];
@@ -90,16 +97,19 @@ onBeforeUnmount(() => {
     </button>
     <div
       v-if="dropdownOpen"
-      class="absolute z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-white/10 bg-[#20232c] p-2 shadow-2xl"
+      data-testid="multiselect-dropdown"
+      class="z-20 mt-2 max-h-64 w-full overflow-y-auto rounded-2xl border border-white/10 bg-[#20232c] shadow-2xl"
+      :class="dropdownMode === 'overlay' ? 'absolute' : 'relative'"
       @scroll="handleScroll"
     >
-      <input
-        v-if="searchEnabled"
-        v-model="searchQuery"
-        class="sticky top-0 z-10 min-h-11 w-full rounded-xl border border-white/10 bg-[#151820] px-3 text-sm text-white outline-none focus:border-amber-300"
-        placeholder="Поиск…"
-      >
-      <div class="mt-2 space-y-1">
+      <div v-if="searchEnabled" class="sticky top-0 z-10 bg-[#20232c] p-2">
+        <input
+          v-model="searchQuery"
+          class="min-h-11 w-full rounded-xl border border-white/10 bg-[#151820] px-3 text-sm text-white outline-none focus:border-amber-300"
+          placeholder="Поиск…"
+        />
+      </div>
+      <div class="space-y-1 p-2" :class="searchEnabled ? 'pt-0' : ''">
         <button
           v-for="option in optionsList"
           :key="option.value"

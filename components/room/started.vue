@@ -265,6 +265,7 @@ const shareFinalFilm = async () => {
         >Создать новую комнату</NuxtLink
       >
     </div>
+    <feedback-room-experience :room-id="room._id" />
   </section>
 
   <section

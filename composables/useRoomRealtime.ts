@@ -88,9 +88,6 @@ export const useRoomRealtime = () => {
         roomStore.openedRoom.status !== ERoomStatus.closed &&
         room.status === ERoomStatus.closed;
       roomStore.applyRoomUpdate(room);
-      if (room.status !== ERoomStatus.created) {
-        void roomStore.loadMatchedFilms(roomId);
-      }
       if (roomWasClosed) {
         notificationStore.addNotification('Комната завершена', 'success');
       }
@@ -99,7 +96,6 @@ export const useRoomRealtime = () => {
       if (payload.room_id !== roomId) return;
       roomStore.announceMatch(payload.film_id);
       onNewMatch?.(payload.film_id);
-      void roomStore.loadMatchedFilms(roomId);
     });
   };
 

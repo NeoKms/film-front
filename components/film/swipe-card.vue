@@ -139,26 +139,26 @@ defineExpose({ swipe: commit });
       class="pointer-events-none h-full w-full object-cover"
       @load="onImageLoad"
       @error="imageFailed = true"
-    >
+    />
     <img
       v-else
       src="/images/placeholders/film-poster.webp"
       :alt="film.name"
       draggable="false"
       class="pointer-events-none h-full w-full object-cover"
-    >
+    />
     <div
       class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/5 to-black/15"
     />
 
     <div
-      class="pointer-events-none absolute left-5 top-5 rotate-[-8deg] rounded-xl border-2 border-red-300 px-4 py-2 text-lg font-black uppercase tracking-wider text-red-200 transition-opacity"
+      class="pointer-events-none absolute right-5 top-5 rotate-[8deg] rounded-xl border-2 border-red-300 px-4 py-2 text-lg font-black uppercase tracking-wider text-red-200 transition-opacity"
       :style="{ opacity: intention === 'deselect' ? progress : 0 }"
     >
       Мимо
     </div>
     <div
-      class="pointer-events-none absolute right-5 top-5 rotate-[8deg] rounded-xl border-2 border-emerald-300 px-4 py-2 text-lg font-black uppercase tracking-wider text-emerald-200 transition-opacity"
+      class="pointer-events-none absolute left-5 top-5 rotate-[-8deg] rounded-xl border-2 border-emerald-300 px-4 py-2 text-lg font-black uppercase tracking-wider text-emerald-200 transition-opacity"
       :style="{ opacity: intention === 'select' ? progress : 0 }"
     >
       Берём

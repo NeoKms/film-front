@@ -3,6 +3,7 @@ import QRCode from 'qrcode';
 import type { IFilmFilter } from '~/stores/film';
 import { ERoomFilmOrder } from '~/types';
 import type { RoomParticipant } from '~/stores/room';
+import { MIN_FILM_YEAR } from '~/utils/helpers';
 
 const roomStore = useRoomStore();
 const notificationStore = useNotificationStore();
@@ -17,6 +18,7 @@ const participantToKick = ref<RoomParticipant | null>(null);
 const qrCodeUrl = ref('');
 const loading = ref(false);
 const kicking = ref(false);
+const settingsSaving = ref(false);
 const shareLink = computed(() =>
   import.meta.client
     ? `${window.location.origin}/room/join?code=${room.value.code}`
@@ -40,7 +42,7 @@ const filterSummary = computed(() => {
     result.push(`Без ${value.exclude_actors.length} участ.`);
   if (value.year_from || value.year_to)
     result.push(
-      `${value.year_from ?? 1960}–${value.year_to ?? new Date().getFullYear()}`,
+      `${value.year_from ?? MIN_FILM_YEAR}–${value.year_to ?? new Date().getFullYear()}`,
     );
   if (value.rating_from) result.push(`Рейтинг от ${value.rating_from}`);
   return result.length ? result : ['Без ограничений'];
@@ -57,7 +59,7 @@ const orderLabels: Record<ERoomFilmOrder, string> = {
   [ERoomFilmOrder.random]: 'Случайный порядок',
 };
 const orderSummary = computed(
-  () => orderLabels[room.value.film_filter.order ?? ERoomFilmOrder.yearDesc],
+  () => orderLabels[room.value.film_filter.order ?? ERoomFilmOrder.random],
 );
 
 const {
@@ -111,11 +113,20 @@ const generateQRCode = async () => {
   });
   showQR.value = true;
 };
+const openSettings = () => {
+  showSettings.value = true;
+  track('filters_open');
+};
 const saveFilters = async (filmFilter: IFilmFilter) => {
-  await roomStore.updateFilters(room.value._id, filmFilter);
-  showSettings.value = false;
-  await refresh();
-  track('filters_saved');
+  settingsSaving.value = true;
+  try {
+    await roomStore.updateFilters(room.value._id, filmFilter);
+    showSettings.value = false;
+    await refresh();
+    track('filters_saved');
+  } finally {
+    settingsSaving.value = false;
+  }
 };
 const start = async () => {
   loading.value = true;
@@ -185,11 +196,32 @@ const kickParticipant = async () => {
         </div>
       </div>
 
-      <div class="mt-6 rounded-2xl border border-white/5 bg-black/15 p-4">
+      <component
+        :is="isOwner ? 'button' : 'div'"
+        :type="isOwner ? 'button' : undefined"
+        class="group relative mt-6 w-full rounded-2xl border bg-black/15 p-4 text-left transition"
+        :class="
+          isOwner
+            ? 'border-amber-300/20 hover:border-amber-300/50 hover:bg-amber-300/[0.035] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300'
+            : 'border-white/5'
+        "
+        :aria-label="isOwner ? 'Изменить настройки выборки' : undefined"
+        @click="isOwner && openSettings()"
+      >
         <div class="flex items-center justify-between gap-4">
-          <span class="text-xs uppercase tracking-widest text-zinc-600"
-            >Выборка</span
-          ><span class="text-sm text-zinc-300">{{
+          <span
+            class="flex items-center gap-2 text-xs uppercase tracking-widest text-zinc-600"
+          >
+            Выборка
+            <span
+              v-if="isOwner"
+              class="flex items-center gap-1 rounded-full bg-amber-300/10 px-2 py-1 text-[10px] normal-case tracking-normal text-amber-200 transition group-hover:bg-amber-300/15"
+            >
+              <icon name="lucide:pencil-line" class="size-3" />
+              Изменить
+            </span>
+          </span>
+          <span class="text-sm text-zinc-300">{{
             totalStatus === 'success' ? `${totalFilms} фильмов` : 'Считаем…'
           }}</span>
         </div>
@@ -205,9 +237,13 @@ const kickParticipant = async () => {
             >{{ item }}</span
           >
         </div>
-      </div>
+        <span
+          v-if="isOwner"
+          class="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-amber-300/[0.035] to-transparent opacity-0 transition group-hover:opacity-100"
+        />
+      </component>
 
-      <div v-if="isOwner" class="mt-6 grid gap-3 sm:grid-cols-[1fr_auto]">
+      <div v-if="isOwner" class="mt-6 grid gap-3">
         <button
           class="min-h-12 rounded-2xl bg-amber-300 px-5 font-semibold text-zinc-950 disabled:opacity-40"
           :disabled="loading || totalStatus !== 'success' || !totalFilms"
@@ -216,16 +252,7 @@ const kickParticipant = async () => {
           Начать выбор · {{ totalFilms ?? '…' }}
         </button>
         <button
-          class="min-h-12 rounded-2xl border border-white/15 px-5 text-white"
-          @click="
-            showSettings = true;
-            track('filters_open');
-          "
-        >
-          Настроить
-        </button>
-        <button
-          class="min-h-11 text-sm text-zinc-600 hover:text-red-300 sm:col-span-2"
+          class="min-h-11 text-sm text-zinc-600 hover:text-red-300"
           :disabled="loading"
           @click="showCloseConfirm = true"
         >
@@ -284,8 +311,44 @@ const kickParticipant = async () => {
     <design-system-modal
       v-model:is-open="showSettings"
       title="Настройки комнаты"
-      ><room-settings :filters="room.film_filter" @save-filters="saveFilters"
-    /></design-system-modal>
+      size="wide"
+    >
+      <Suspense>
+        <room-settings
+          :filters="room.film_filter"
+          :saving="settingsSaving"
+          @save-filters="saveFilters"
+        />
+        <template #fallback>
+          <div
+            role="status"
+            aria-live="polite"
+            class="grid min-h-[28rem] place-items-center py-10"
+          >
+            <div class="w-full max-w-md text-center">
+              <span
+                class="mx-auto grid size-12 place-items-center rounded-2xl bg-amber-300/10 text-amber-200"
+              >
+                <design-system-loading />
+              </span>
+              <p class="mt-4 font-medium text-white">Готовим настройки</p>
+              <p class="mt-2 text-sm leading-6 text-zinc-500">
+                Загружаем подборки, жанры, страны и участников фильмов…
+              </p>
+              <div class="mt-7 space-y-3" aria-hidden="true">
+                <span class="block h-20 animate-pulse rounded-2xl bg-white/5" />
+                <span
+                  class="block h-14 animate-pulse rounded-2xl bg-white/[0.035]"
+                />
+                <span
+                  class="block h-14 animate-pulse rounded-2xl bg-white/[0.025]"
+                />
+              </div>
+            </div>
+          </div>
+        </template>
+      </Suspense>
+    </design-system-modal>
     <design-system-modal
       :is-open="Boolean(participantToKick)"
       title="Удалить участника?"

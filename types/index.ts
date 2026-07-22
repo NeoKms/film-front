@@ -50,6 +50,24 @@ export interface SeoIntentSection {
 
 export type SeoIntentAnalyticsSource = 'couple' | 'friends' | 'group';
 
+export type FeedbackType = 'room_experience' | 'bug_report';
+export type FeedbackRating = 'negative' | 'neutral' | 'positive';
+
+export interface CreateFeedbackPayload {
+  type: FeedbackType;
+  rating?: FeedbackRating;
+  message?: string;
+  room_id?: string;
+  page_path: string;
+  user_agent?: string;
+}
+
+export interface FeedbackCreatedResponse {
+  _id: string;
+  type: FeedbackType;
+  created_at: string;
+}
+
 export interface SeoIntentPage {
   slug: string;
   title: string;

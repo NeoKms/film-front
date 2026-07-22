@@ -43,6 +43,33 @@ not publish a sitemap.
 
 The host must have Docker installed, and the SSH user must be allowed to run Docker commands. TLS and routing to `APP_PORT` remain the responsibility of the host reverse proxy. [`nginx.example.conf`](../nginx.example.conf) contains a ready-to-adapt Nginx server block; its upstream port must match `APP_PORT`.
 
+The production apex domain is canonical. Point both `film-together.com` and
+`www.film-together.com` to the proxy. Adapt and enable both HTTP server blocks
+from `nginx.example.conf`, validate them with `nginx -t`, and reload Nginx
+**before** running Certbot. Confirm that `nginx -T` shows
+`server_name www.film-together.com` in the frontend redirect block rather than
+an unrelated default virtual host. Then issue one certificate containing both
+names:
+
+```sh
+sudo certbot --nginx --cert-name film-together.com \
+  -d film-together.com \
+  -d www.film-together.com \
+  --redirect
+```
+
+Validate and reload Nginx after reviewing Certbot's changes:
+
+```sh
+sudo nginx -t
+sudo systemctl reload nginx
+curl -I 'https://www.film-together.com/room/join?code=test'
+```
+
+The last request must return `301` with
+`Location: https://film-together.com/room/join?code=test`. Do not proxy or
+render content on `www`, because that would create a second indexable origin.
+
 The frontend quality job runs the SSR SEO check after the production build. It
 verifies the public route allowlist, canonical and OpenGraph URLs, JSON-LD,
 private-route `X-Robots-Tag`, `robots.txt`, and both production and dev sitemap

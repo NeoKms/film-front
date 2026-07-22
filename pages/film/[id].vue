@@ -127,7 +127,7 @@ useSeoMeta({ robots: 'noindex, nofollow' });
             :alt="film.name"
             class="mx-auto aspect-[2/3] w-44 rounded-2xl shadow-2xl shadow-black/50 sm:w-full"
           />
-          <div class="self-end">
+          <div class="self-start sm:pt-1">
             <div class="flex flex-wrap gap-2 text-xs">
               <span
                 v-if="film.rating"

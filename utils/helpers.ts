@@ -11,6 +11,8 @@ export const isMissingImageUrl = (src?: string | null): boolean =>
 export const normalizeRoomCode = (value: string): string =>
   value.replace(/\D/g, '').slice(0, 6);
 
+export const MIN_FILM_YEAR = 1937;
+
 export const isRedirectedKinopoiskPlaceholder = (
   image: HTMLImageElement,
 ): boolean =>
@@ -87,7 +89,7 @@ export const mapSettingsToFilmFilter = (
         : undefined,
     rating_from: filter.rating[0] === 1 ? undefined : +filter.rating[0],
     rating_to: filter.rating[1] === 10 ? undefined : +filter.rating[1],
-    year_from: filter.year[0] === 1960 ? undefined : +filter.year[0],
+    year_from: filter.year[0] === MIN_FILM_YEAR ? undefined : +filter.year[0],
     year_to: filter.year[1] === nowYear ? undefined : +filter.year[1],
     age_ratings: filter.ageRatings.length
       ? Array.from(filter.ageRatings)

@@ -84,9 +84,12 @@ onBeforeUnmount(() => {
         >
           <div
             v-if="title || closable"
-            class="mb-5 flex items-center justify-between gap-4"
+            class="sticky -top-5 z-20 -mx-5 -mt-5 mb-5 flex items-center justify-between gap-4 border-b border-white/10 bg-[#151820]/95 px-5 py-4 backdrop-blur sm:-top-7 sm:-mx-7 sm:-mt-7 sm:px-7 sm:py-5"
           >
-            <h2 v-if="title" class="text-xl font-medium text-white">
+            <h2
+              v-if="title"
+              class="min-w-0 text-xl font-medium leading-tight text-white"
+            >
               {{ title }}
             </h2>
             <span v-else />
