@@ -32,6 +32,11 @@
           class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
           >Для компании</NuxtLink
         >
+        <NuxtLink
+          to="/cooperation"
+          class="inline-flex min-h-10 items-center transition hover:text-white sm:min-h-0"
+          >Сотрудничество</NuxtLink
+        >
       </nav>
       <nav
         class="flex flex-wrap gap-x-4 gap-y-2 sm:grid sm:gap-3"

@@ -5,6 +5,7 @@ const publicRoutes = [
   '/for-couples',
   '/for-friends',
   '/for-groups',
+  '/cooperation',
   '/sign-in',
   '/signup',
   '/legal/privacy',

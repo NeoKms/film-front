@@ -6,6 +6,7 @@ export const INDEXABLE_ROUTES = [
   '/for-couples',
   '/for-friends',
   '/for-groups',
+  '/cooperation',
   '/legal/privacy',
   '/legal/cookies',
   '/legal/terms',

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-const config = useRuntimeConfig();
 const faqItems = [
   {
     question: 'Как выбрать фильм вместе онлайн?',
@@ -44,7 +43,7 @@ const faqItems = [
   {
     question: 'Film Together бесплатный?',
     answer:
-      'Да, beta-версия бесплатна и работает без обязательной регистрации.',
+      'Да, Film Together бесплатный и работает без обязательной регистрации.',
   },
   {
     question: 'Здесь есть сериалы?',
@@ -674,21 +673,20 @@ const onFaqToggle = (event: Event, index: number) => {
           <p
             class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300"
           >
-            Открытая бета
+            Сотрудничество
           </p>
           <h2 class="mt-2 text-2xl font-medium text-white">
-            Продукт развивается вместе с первыми компаниями
+            Давайте делать выбор кино интереснее вместе
           </h2>
           <p class="mt-2 text-sm text-zinc-400">
-            Без выдуманных отзывов и маркетинговых цифр — только работающий
-            совместный выбор.
+            Открыты к партнёрствам, совместным материалам, промо и другим
+            идеям, которые подходят Film Together.
           </p>
         </div>
-        <a
-          v-if="config.public.legalEmail"
-          :href="`mailto:${config.public.legalEmail}`"
+        <NuxtLink
+          to="/cooperation"
           class="mt-5 inline-flex min-h-11 items-center text-sm text-amber-300 sm:mt-0"
-          >Отправить обратную связь →</a
+          >Обсудить сотрудничество →</NuxtLink
         >
       </div>
     </section>

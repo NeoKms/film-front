@@ -12,6 +12,7 @@ const routes = [
   '/for-couples',
   '/for-friends',
   '/for-groups',
+  '/cooperation',
   '/sign-in',
   '/signup',
   '/legal/privacy',
@@ -244,6 +245,7 @@ test.describe('extended mobile responsive matrix', () => {
       page.getByRole('link', { name: 'Для двоих', exact: true }),
       page.getByRole('link', { name: 'С друзьями', exact: true }),
       page.getByRole('link', { name: 'Для компании', exact: true }),
+      page.getByRole('link', { name: 'Сотрудничество', exact: true }),
       page.getByRole('link', { name: 'Обработка данных', exact: true }),
       page.getByRole('link', { name: 'Файлы cookie', exact: true }),
       page.getByRole('link', {

@@ -13,6 +13,7 @@ const publicRoutes = [
   '/for-couples',
   '/for-friends',
   '/for-groups',
+  '/cooperation',
   '/legal/privacy',
   '/legal/cookies',
   '/legal/terms',

@@ -107,6 +107,19 @@ const openFilmDetails = (film: IFilmItem) => {
   detailsFilm.value = film;
 };
 
+const openFinalFilmDetails = () => {
+  const finalFilm = room.value.final_film;
+  if (!finalFilm) return;
+  const matchedFilm = roomStore.matchedFilms.find(
+    (film) => film._id === finalFilm._id,
+  );
+  if (matchedFilm) {
+    openFilmDetails(matchedFilm);
+    return;
+  }
+  void navigateTo(filmDetailsLocation(finalFilm._id));
+};
+
 const chooseFinalFilm = async () => {
   if (!finalizingFilm.value || finalizing.value) return;
   finalizing.value = true;
@@ -182,14 +195,20 @@ const shareFinalFilm = async () => {
         Фильм выбран
       </h1>
       <div
-        class="mx-auto mt-8 grid max-w-xl gap-5 rounded-[2rem] border border-amber-300/30 bg-amber-300/[0.07] p-5 text-center sm:grid-cols-[9rem_1fr] sm:items-center sm:text-left"
+        class="relative mx-auto mt-8 grid max-w-xl gap-5 rounded-[2rem] border border-amber-300/30 bg-amber-300/[0.07] p-5 text-center sm:grid-cols-[9rem_1fr] sm:items-center sm:text-left"
       >
+        <button
+          type="button"
+          class="absolute inset-0 rounded-[2rem] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+          :aria-label="`Открыть подробности: ${room.final_film.name}`"
+          @click="openFinalFilmDetails"
+        />
         <film-poster
           :src="room.final_film.poster_url"
           :alt="room.final_film.name"
-          class="mx-auto aspect-[2/3] w-36 rounded-2xl sm:w-full"
+          class="pointer-events-none relative mx-auto aspect-[2/3] w-36 rounded-2xl sm:w-full"
         />
-        <div>
+        <div class="pointer-events-none relative">
           <p
             class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-300"
           >
@@ -201,8 +220,8 @@ const shareFinalFilm = async () => {
           <p class="mt-1 text-sm text-zinc-400">{{ room.final_film.year }}</p>
           <button
             type="button"
-            class="mt-5 min-h-11 rounded-xl bg-amber-300 px-4 text-sm font-semibold text-zinc-950"
-            @click="shareFinalFilm"
+            class="pointer-events-auto relative z-10 mt-5 min-h-11 rounded-xl bg-amber-300 px-4 text-sm font-semibold text-zinc-950"
+            @click.stop="shareFinalFilm"
           >
             Поделиться фильмом
           </button>
@@ -252,7 +271,7 @@ const shareFinalFilm = async () => {
       <span class="text-4xl" aria-hidden="true">🎞️</span>
       <p class="mt-3 text-zinc-400">Общих фильмов пока нет.</p>
     </div>
-    <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+    <div class="mx-auto mt-8 grid w-full max-w-xl gap-3 sm:grid-cols-2">
       <design-system-button
         v-if="isOwner"
         :loading="repeating"

@@ -120,14 +120,24 @@ const missing = ref('');
 const groupId = ref('');
 const selectedCountries = ref<SelectOption[]>([]);
 const selectedTags = ref<SelectOption[]>([]);
+const selectedPersons = ref<SelectOption[]>([]);
 const availableCountryIds = ref<string[] | null>(null);
 const availableTagIds = ref<string[] | null>(null);
 const ratingFrom = ref<number | ''>('');
 const ratingTo = ref<number | ''>('');
+const yearFrom = ref<number | ''>('');
+const yearTo = ref<number | ''>('');
 const items = ref<AdminFilm[]>([]);
 const groupOptions = ref<AdminReference[]>([]);
 const tagOptions = ref<AdminReference[]>([]);
 const countryOptions = ref<AdminReference[]>([]);
+const personOptions = ref<AdminReference[]>([]);
+const personOptionsStatus = ref<'error' | 'pending' | 'success' | 'idle'>(
+  'idle',
+);
+const personOptionsOffset = ref(0);
+const personOptionsTotal = ref(0);
+const personSearch = ref('');
 const total = ref(0);
 const filmLimit = 40;
 const serverOffset = ref(0);
@@ -167,6 +177,7 @@ const error = ref('');
 const isLoading = ref(false);
 const wrappedFetch = useWrappedFetch();
 let requestVersion = 0;
+let personRequestVersion = 0;
 const filmEditableKeys = [
   'name',
   'name_en',
@@ -291,6 +302,47 @@ const loadFilmOptions = async () => {
   tagOptions.value = tags;
   countryOptions.value = countries;
 };
+
+const loadPersonOptions = async (reset = false) => {
+  if (
+    (!reset && personOptionsStatus.value === 'pending') ||
+    (!reset && personOptionsOffset.value >= personOptionsTotal.value)
+  )
+    return;
+  const version = reset ? ++personRequestVersion : personRequestVersion;
+  if (reset) {
+    personOptions.value = [];
+    personOptionsOffset.value = 0;
+    personOptionsTotal.value = 0;
+  }
+  personOptionsStatus.value = 'pending';
+  try {
+    const params = new URLSearchParams({
+      limit: '100',
+      offset: String(personOptionsOffset.value),
+    });
+    if (personSearch.value) params.set('search', personSearch.value);
+    const response = await wrappedFetch<{
+      items: AdminReference[];
+      meta: { total: number };
+    }>(`/admin/persons?${params}`);
+    if (version !== personRequestVersion) return;
+    const known = new Set(personOptions.value.map(({ _id }) => _id));
+    personOptions.value = [
+      ...personOptions.value,
+      ...response.items.filter(({ _id }) => !known.has(_id)),
+    ];
+    personOptionsOffset.value += response.items.length;
+    personOptionsTotal.value = response.meta.total;
+    personOptionsStatus.value = 'success';
+  } catch {
+    if (version === personRequestVersion) personOptionsStatus.value = 'error';
+  }
+};
+
+const searchablePersonOptions = computed(() =>
+  personOptions.value.map(({ _id, name }) => ({ value: _id, label: name })),
+);
 
 const maxDaily = computed(() =>
   Math.max(
@@ -432,6 +484,13 @@ async function loadFilms(reset = false) {
     if (ratingFrom.value !== '')
       params.set('rating_from', String(ratingFrom.value));
     if (ratingTo.value !== '') params.set('rating_to', String(ratingTo.value));
+    if (yearFrom.value !== '') params.set('year_from', String(yearFrom.value));
+    if (yearTo.value !== '') params.set('year_to', String(yearTo.value));
+    if (selectedPersons.value.length)
+      params.set(
+        'persons',
+        selectedPersons.value.map(({ value }) => value).join(','),
+      );
     const filterOptionParams = new URLSearchParams(params);
     filterOptionParams.delete('limit');
     filterOptionParams.delete('offset');
@@ -505,10 +564,13 @@ async function select(next: Section) {
   groupId.value = '';
   selectedCountries.value = [];
   selectedTags.value = [];
+  selectedPersons.value = [];
   availableCountryIds.value = null;
   availableTagIds.value = null;
   ratingFrom.value = '';
   ratingTo.value = '';
+  yearFrom.value = '';
+  yearTo.value = '';
   moderationMode.value = false;
   feedbackType.value = '';
   feedbackRating.value = '';
@@ -822,6 +884,16 @@ async function updateTagFilters(options: SelectOption[]) {
   await applyFilters();
 }
 
+async function updatePersonFilters(options: SelectOption[]) {
+  selectedPersons.value = options;
+  await applyFilters();
+}
+
+const handleSearchPersons = (value: string) => {
+  personSearch.value = value.trim();
+  void loadPersonOptions(true);
+};
+
 async function remove(item: Pick<AdminFilm, '_id' | 'name'>) {
   if (!confirm(`Скрыть «${item.name}»?`)) return;
   const resource = section.value === 'films' ? 'films' : section.value;
@@ -896,6 +968,7 @@ watch(isFilmModalOpen, (isOpen) => {
 
 onMounted(() => {
   document.addEventListener('keydown', handlePageKeydown);
+  void loadPersonOptions(true);
   void refresh();
 });
 onBeforeUnmount(() =>
@@ -1527,6 +1600,19 @@ onBeforeUnmount(() =>
                 @update:selected-options="updateTagFilters"
               />
             </div>
+            <div v-if="section === 'films'" class="admin-reference-filter">
+              <span>Персоны</span>
+              <design-system-multiselect
+                aria-label="Выбрать персон"
+                :is-api="true"
+                :options="searchablePersonOptions"
+                :selected-options="selectedPersons"
+                :status="personOptionsStatus"
+                @update:selected-options="updatePersonFilters"
+                @search="handleSearchPersons"
+                @load-more="loadPersonOptions()"
+              />
+            </div>
             <div v-if="section === 'films'" class="admin-rating-range">
               <label class="admin-rating-filter">
                 <span>Рейтинг от</span>
@@ -1550,6 +1636,34 @@ onBeforeUnmount(() =>
                   max="10"
                   step="0.1"
                   inputmode="decimal"
+                  class="admin-filter-control"
+                  @keyup.enter="applyFilters"
+                />
+              </label>
+            </div>
+            <div v-if="section === 'films'" class="admin-rating-range">
+              <label class="admin-rating-filter">
+                <span>Год от</span>
+                <input
+                  v-model.number="yearFrom"
+                  type="number"
+                  min="1937"
+                  :max="new Date().getFullYear()"
+                  step="1"
+                  inputmode="numeric"
+                  class="admin-filter-control"
+                  @keyup.enter="applyFilters"
+                />
+              </label>
+              <label class="admin-rating-filter">
+                <span>до</span>
+                <input
+                  v-model.number="yearTo"
+                  type="number"
+                  min="1937"
+                  :max="new Date().getFullYear()"
+                  step="1"
+                  inputmode="numeric"
                   class="admin-filter-control"
                   @keyup.enter="applyFilters"
                 />

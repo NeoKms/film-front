@@ -713,7 +713,7 @@ const resetFilters = () => {
                   localFilters.ageRatings.length +
                   localFilters.mpaaRatings.length
                 "
-                class="rounded-full bg-amber-300/10 px-2 py-0.5 text-[10px] text-amber-200"
+                class="shrink-0 whitespace-nowrap rounded-full bg-amber-300/10 px-2.5 py-1 text-[10px] leading-none text-amber-200"
               >
                 {{
                   localFilters.ageRatings.length +

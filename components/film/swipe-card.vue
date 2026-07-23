@@ -172,11 +172,13 @@ defineExpose({ swipe: commit });
           >Рейтинг {{ film.rating.toFixed(1) }}</span
         >
       </div>
-      <h1
-        class="pointer-events-none text-2xl font-semibold leading-tight text-white sm:text-3xl"
+      <div
+        class="pointer-events-none -mx-2 rounded-2xl bg-black/45 px-2 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.22)] backdrop-blur-[2px]"
       >
-        {{ film.name }}
-      </h1>
+        <h1 class="text-2xl font-semibold leading-tight text-white sm:text-3xl">
+          {{ film.name }}
+        </h1>
+      </div>
       <p class="pointer-events-none mt-2 line-clamp-2 text-sm text-zinc-300">
         {{ film.year
         }}<template v-if="film.duration"> · {{ film.duration }} мин</template
